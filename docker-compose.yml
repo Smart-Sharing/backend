@@ -1,0 +1,19 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:13.3
+    restart: unless-stopped
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./assets/postgres/init.sql:/docker-entrypoint-initdb.d/1-schema.sql
+    environment: 
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "postgres"
+      POSTGRES_DB: "sharing_machines"
+
+    ports:
+      - "5400:5432"
+
+volumes:
+  pgdata:
