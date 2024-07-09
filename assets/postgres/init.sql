@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS machines(
 
 CREATE TABLE IF NOT EXISTS users(
   id SERIAL,
-	name text NOT NULL,
+  :name text NOT NULL,
 	phone_number varchar(11) NOT NULL UNIQUE,
 	job_position varchar(8) NOT NULL,
 
