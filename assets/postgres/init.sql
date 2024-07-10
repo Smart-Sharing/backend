@@ -10,11 +10,11 @@ CREATE TABLE IF NOT EXISTS machines(
 
 CREATE TABLE IF NOT EXISTS users(
   id SERIAL,
-  :name text NOT NULL,
+  name text NOT NULL,
 	phone_number varchar(11) NOT NULL UNIQUE,
 	job_position varchar(8) NOT NULL,
 
-	CHECK (job_position IN ('worker', 'operator', 'admin')),
+	CHECK (job_position IN ('worker', 'admin')),
 	PRIMARY KEY (id)
 );
 
@@ -23,8 +23,8 @@ CREATE TABLE IF NOT EXISTS sessions(
   state integer DEFAULT 0,
   machine_id varchar(16) NOT NULL,
   worker_id integer NOT NULL,
-  datetime_start TIMESTAMP,
-  datetime_finish TIMESTAMP,
+  datetime_start TIMESTAMP DEFAULT CURRENT_DATE,
+  datetime_finish TIMESTAMP DEFAULT CURRENT_DATE,
 
   CHECK (state IN (0, 1, 2)),
 
@@ -33,4 +33,14 @@ CREATE TABLE IF NOT EXISTS sessions(
   FOREIGN KEY (machine_id) REFERENCES machines (id) ON DELETE CASCADE,
   FOREIGN KEY (worker_id) REFERENCES users (id) ON DELETE CASCADE
 );
+
+-- CREATE TEST DATA into database
+INSERT INTO users(name, phone_number, job_position) 
+  VALUES ('USER1', '89099769897', 'worker'), 
+         ('SUPER-USER', '89090001122', 'admin');
+
+INSERT INTO machines(id) VALUES ('1FGH345'), ('1ASD987');
+
+INSERT INTO sessions(machine_id, worker_id) VALUES ('1FGH345', 2), ('1ASD987', 1);
+
 
