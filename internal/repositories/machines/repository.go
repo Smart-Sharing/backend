@@ -22,11 +22,23 @@ func (r *repository) InsertMachine(machineId string) error {
 	return nil
 }
 
-func (r *repository) SelectMachine(machineId string) (*entities.Machine, error) {
+func (r *repository) GetMachineByID(machineId string) (*entities.Machine, error) {
 	var m entities.Machine
-	err := r.db.Get(&m, "SELECT * FROM machines WHERE id = $1", machineId)
-	if err != nil {
+
+	q := `SELECT * FROM machines WHERE id = $1`
+
+	if err := r.db.Get(&m, q, machineId); err != nil {
 		return nil, errors.Wrap(err, "select machine by id")
 	}
 	return &m, nil
+}
+
+func (r *repository) GetAllMachines() ([]entities.Machine, error) {
+	machines := make([]entities.Machine, 0)
+	q := `SELECT * FROM machines`
+	if err := r.db.Select(&machines, q); err != nil {
+		return nil, errors.Wrap(err, "get all machines")
+	}
+
+	return machines, nil
 }

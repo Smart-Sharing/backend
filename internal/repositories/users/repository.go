@@ -25,3 +25,14 @@ func (r *repository) GetAllUsers() ([]entities.User, error) {
 	}
 	return users, nil
 }
+
+func (r *repository) GetUserByID(userId int) (*entities.User, error) {
+	var u entities.User
+
+	q := `SELECT * FROM users WHERE id = $1`
+	err := r.db.Get(&u, q, userId)
+	if err != nil {
+		return nil, errors.Wrap(err, "get user by id")
+	}
+	return &u, err
+}
