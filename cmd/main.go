@@ -1,38 +1,19 @@
 package main
 
 import (
-	"fmt"
+	"log/slog"
 
-	"github.com/ecol-master/sharing-wh-machines/internal/dbs/postgres"
+	"github.com/ecol-master/sharing-wh-machines/internal/app"
+	"github.com/ecol-master/sharing-wh-machines/internal/config"
 	"github.com/ecol-master/sharing-wh-machines/internal/logger"
-	"github.com/ecol-master/sharing-wh-machines/internal/repositories/machines"
 )
 
 func main() {
-	err := logger.Setup()
-	if err != nil {
-		fmt.Println("can not initialize logger: ", err)
-		return
+	logger.Setup()
+	cfg := config.MustLoad()
+
+	a := app.New(cfg)
+	if err := a.Run(); err != nil {
+		slog.Error(err.Error())
 	}
-
-	cfg := postgres.Config{
-		Addr:     "0.0.0.0",
-		Port:     5400,
-		User:     "postgres",
-		Password: "postgres",
-		DB:       "sharing_machines",
-	}
-
-	conn, err := postgres.New(cfg)
-	if err != nil {
-		panic(err)
-	}
-
-	machineId := "1FG5689"
-	machinesRepo := machines.NewRepository(conn)
-	err = machinesRepo.InsertMachine(machineId)
-	fmt.Println(err)
-
-	machine, err := machinesRepo.SelectMachine(machineId)
-	fmt.Println(machine, err)
 }
