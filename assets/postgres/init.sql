@@ -13,8 +13,10 @@ CREATE TABLE IF NOT EXISTS users(
   name text NOT NULL,
 	phone_number varchar(11) NOT NULL UNIQUE,
 	job_position varchar(8) NOT NULL,
+  password varchar (128) NOT NUll,
 
 	CHECK (job_position IN ('worker', 'admin')),
+  CHECK (LENGTH(password) >= 8),
 	PRIMARY KEY (id)
 );
 
@@ -35,9 +37,9 @@ CREATE TABLE IF NOT EXISTS sessions(
 );
 
 -- CREATE TEST DATA into database
-INSERT INTO users(name, phone_number, job_position) 
-  VALUES ('USER1', '89099769897', 'worker'), 
-         ('SUPER-USER', '89090001122', 'admin');
+INSERT INTO users(name, phone_number, job_position, password) 
+  VALUES ('USER1', '89099769897', 'worker', '12345678'), 
+         ('SUPER-USER', '89090001122', 'admin', 'some-password123');
 
 INSERT INTO machines(id) VALUES ('1FGH345'), ('1ASD987');
 
