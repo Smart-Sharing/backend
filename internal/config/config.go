@@ -11,6 +11,7 @@ import (
 
 type Config struct {
 	TokenTTL time.Duration `yaml:"token_ttl" env-required:"true"`
+	Secret   string        `yaml:"secret" env-required:"true"`
 	App      AppConfig
 	Postgres PostgresConfig
 }

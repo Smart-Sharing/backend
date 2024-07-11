@@ -33,7 +33,7 @@ func (a *App) Run() error {
 		// TODO: посмотреть как делал панику Николай Тузов
 		panic(errors.Wrap(err, ""))
 	}
-	handler := handler.New(db).MakeHTTPHandler()
+	handler := handler.New(db, a.cfg).MakeHTTPHandler()
 
 	addr := fmt.Sprintf("%s:%d", a.cfg.App.Addr, a.cfg.App.Port)
 	slog.Info("staring app", slog.String("address", addr))

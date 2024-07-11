@@ -36,3 +36,14 @@ func (r *repository) GetUserByID(userId int) (*entities.User, error) {
 	}
 	return &u, err
 }
+
+func (r *repository) GetUserByPhoneNumber(phoneNumber string) (*entities.User, error) {
+	var u entities.User
+
+	q := `SELECT * FROM users WHERE phone_number = $1`
+	err := r.db.Get(&u, q, phoneNumber)
+	if err != nil {
+		return nil, errors.Wrap(err, "get user by phone number")
+	}
+	return &u, err
+}

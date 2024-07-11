@@ -77,6 +77,8 @@ func (h *Handler) GetUserByID(w http.ResponseWriter, r *http.Request) {
 		if err := utils.RespondWith500(w); err != nil {
 			slog.Error("failed to respond with 500 during get user by id",
 				slog.Int("user_id", id),
+				slog.String("path", r.URL.Path),
+				slog.String("method", r.Method),
 				slog.String("error", err.Error()),
 			)
 		}
