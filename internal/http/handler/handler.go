@@ -25,18 +25,23 @@ func (h *Handler) MakeHTTPHandler() http.Handler {
 	mux := http.NewServeMux()
 
 	// api methods
-	mux.HandleFunc("GET /get_all_users", h.GetAllUsers)
-	mux.HandleFunc("GET /get_user", h.GetUserByID)
+	mux.Handle("GET /get_all_users", h.makeAdminHandler(h.GetAllUsers))
+	mux.Handle("GET /get_user", h.makeAdminHandler(h.GetUserByID))
 
-	mux.HandleFunc("GET /get_all_machines", h.GetAllMachines)
-	mux.HandleFunc("GET /get_machine", h.GetMachineByID)
+	mux.Handle("GET /get_all_machines", h.makeAdminHandler(h.GetAllMachines))
+	mux.Handle("GET /get_machine", h.makeAdminHandler(h.GetMachineByID))
 
-	mux.HandleFunc("GET /get_all_sessions", h.GetAllSessions)
-	mux.HandleFunc("GET /get_session", h.GetSessionByID)
+	mux.Handle("GET /get_all_sessions", h.makeAdminHandler(h.GetAllSessions))
+	mux.Handle("GET /get_session", h.makeAdminHandler(h.GetSessionByID))
 
 	// auth
 	mux.HandleFunc("POST /login", h.Login)
 
 	// logging all request with LoggingMiddleware
 	return middlewares.LoggingMiddleware(mux)
+}
+
+// function making handler with IsAdmin middleware
+func (h *Handler) makeAdminHandler(handleFunc func(w http.ResponseWriter, r *http.Request)) http.Handler {
+	return middlewares.IsAdmin(h.cfg.Secret, http.HandlerFunc(handleFunc))
 }
