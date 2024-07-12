@@ -29,7 +29,7 @@ type PostgresConfig struct {
 	DB       string `yaml:"db"`
 }
 
-// TODO: comment fuction
+// Function will panic if can not read config file or environment variables
 func MustLoad() *Config {
 	var cfg Config
 

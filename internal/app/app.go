@@ -23,15 +23,11 @@ func New(cfg *config.Config) *App {
 	}
 }
 
-func GetUserHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "new user")
-}
-
+// Function will panic if can not connect to db
 func (a *App) Run() error {
 	db, err := postgres.New(a.cfg.Postgres)
 	if err != nil {
-		// TODO: посмотреть как делал панику Николай Тузов
-		panic(errors.Wrap(err, ""))
+		panic(errors.Wrap(err, "failed to connect to postgres db"))
 	}
 	handler := handler.New(db, a.cfg).MakeHTTPHandler()
 
