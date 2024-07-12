@@ -5,11 +5,10 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/ecol-master/sharing-wh-machines/internal/entities"
 	"github.com/ecol-master/sharing-wh-machines/internal/utils"
 )
 
-func IsAdmin(secret string, next http.Handler) http.Handler {
+func IsUser(secret string, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		token := r.Header["Authorization"]
 
@@ -25,6 +24,7 @@ func IsAdmin(secret string, next http.Handler) http.Handler {
 			}
 			return
 		}
+
 		tokenData := strings.Split(token[0], " ")
 		if len(tokenData) != 2 {
 			if err := utils.RespondWith400(w, "wrong auth token format"); err != nil {
@@ -53,7 +53,8 @@ func IsAdmin(secret string, next http.Handler) http.Handler {
 		}
 
 		userJob, ok := claims["job_position"]
-		if !ok || userJob != entities.Admin {
+
+		if !ok || userJob == "" {
 			if err := utils.RespondWith400(w, "user have no access to this resource"); err != nil {
 				if err := utils.RespondWith500(w); err != nil {
 					slog.Error("failed to respond with 500 on user have no permissions to resourse",
@@ -67,7 +68,6 @@ func IsAdmin(secret string, next http.Handler) http.Handler {
 			return
 		}
 
-		// User is admin, the access to resources is allowed
 		slog.Info("handle request with auth",
 			slog.String("path", r.URL.Path),
 			slog.String("method", r.Method),

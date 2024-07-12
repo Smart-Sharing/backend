@@ -64,18 +64,20 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 
 	if data.Password != user.Password {
 		if err = utils.RespondWith400(w, "user password is not correct"); err != nil {
-			slog.Error("failed to respond with 500 during user password is not correct",
-				slog.String("path", r.URL.Path),
-				slog.String("method", r.Method),
-				slog.String("phone_number", data.PhoneNumber),
-				slog.String("right_password", user.Password),
-				slog.String("user_input_password", data.Password),
-				slog.String("error", err.Error()),
-			)
-
+			if err = utils.RespondWith500(w); err != nil {
+				slog.Error("failed to respond with 500 during user password is not correct",
+					slog.String("path", r.URL.Path),
+					slog.String("method", r.Method),
+					slog.String("phone_number", data.PhoneNumber),
+					slog.String("right_password", user.Password),
+					slog.String("user_input_password", data.Password),
+					slog.String("error", err.Error()),
+				)
+			}
 		}
 		return
 	}
+
 	token, err := h.service.GenerateToken(*user, h.cfg.Secret, h.cfg.TokenTTL)
 	if err != nil {
 		slog.Error("failed to generate JWT token", slog.String("error", err.Error()))
