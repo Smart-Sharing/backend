@@ -37,9 +37,11 @@ func RespondWithError(w http.ResponseWriter, code int, message string) error {
 }
 
 func RespondWith400(w http.ResponseWriter, message string) error {
-	return RespondWithError(w,
-		http.StatusBadRequest,
-		message)
+	return RespondWithError(w, http.StatusBadRequest, message)
+}
+
+func RespondWith401(w http.ResponseWriter, message string) error {
+	return RespondWithError(w, http.StatusUnauthorized, message)
 }
 
 func RespondWith404(w http.ResponseWriter) error {
@@ -55,13 +57,9 @@ func RespondWith500(w http.ResponseWriter) error {
 }
 
 func SuccessRespondWith200(w http.ResponseWriter, payload interface{}) error {
-	return RespondWithJSON(w,
-		http.StatusOK,
-		payload)
+	return RespondWithJSON(w, http.StatusOK, payload)
 }
 
 func SuccessRepondWith201(w http.ResponseWriter, payload interface{}) error {
-	return RespondWithJSON(w,
-		http.StatusCreated,
-		payload)
+	return RespondWithJSON(w, http.StatusCreated, payload)
 }

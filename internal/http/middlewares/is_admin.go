@@ -25,6 +25,7 @@ func IsAdmin(secret string, next http.Handler) http.Handler {
 			}
 			return
 		}
+
 		tokenData := strings.Split(token[0], " ")
 		if len(tokenData) != 2 {
 			if err := utils.RespondWith400(w, "wrong auth token format"); err != nil {
@@ -48,6 +49,52 @@ func IsAdmin(secret string, next http.Handler) http.Handler {
 					slog.Any("token", token),
 					slog.String("error", err.Error()),
 				)
+			}
+			return
+		}
+
+		exp, ok := claims["exp"]
+		if !ok {
+			slog.Error("failed to extract	`exp` from token claims")
+			if err := utils.RespondWith500(w); err != nil {
+				slog.Error("failed to respond with 500 on error with extract `exp` from token claims",
+					slog.String("path", r.URL.Path),
+					slog.String("method", r.Method),
+					slog.Any("token", token),
+					slog.String("error", err.Error()),
+				)
+			}
+			return
+		}
+
+		expUnix, ok := exp.(int64)
+		if !ok {
+			slog.Error("failed to convert `exp` to int64 (Unix time)")
+			if err := utils.RespondWith500(w); err != nil {
+				slog.Error("failed to respond with 500 on error with converting `exp` to int64 (Unix time)",
+					slog.String("path", r.URL.Path),
+					slog.String("method", r.Method),
+					slog.Any("token", token),
+					slog.Any("exp", exp),
+					slog.String("error", err.Error()),
+				)
+			}
+			return
+		}
+
+		// Function validating token
+		if tokenExpire(expUnix) {
+			if err := utils.RespondWith401(w, "token is expired"); err != nil {
+				if err = utils.RespondWith500(w); err != nil {
+					slog.Error("failed to respond with 500 on error with token expired",
+						slog.String("path", r.URL.Path),
+						slog.String("method", r.Method),
+						slog.Any("token", token),
+						slog.Any("exp", exp),
+						slog.String("error", err.Error()),
+					)
+
+				}
 			}
 			return
 		}
