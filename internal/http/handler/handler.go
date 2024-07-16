@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/ecol-master/sharing-wh-machines/internal/config"
+	"github.com/ecol-master/sharing-wh-machines/internal/entities"
 	"github.com/ecol-master/sharing-wh-machines/internal/http/middlewares"
 	"github.com/ecol-master/sharing-wh-machines/internal/service"
 	"github.com/jmoiron/sqlx"
@@ -37,11 +38,21 @@ func (h *Handler) MakeHTTPHandler() http.Handler {
 	// auth
 	mux.HandleFunc("POST /login", h.Login)
 
+	// rent machines
+	mux.Handle("POST /unlock_machine", h.makeWorkerHandler(h.UnlockMachine))
+
+	// arduino
+	mux.Handle("POST /register_machine", http.HandlerFunc(h.RegisterMachine))
+
 	// logging all request with LoggingMiddleware
 	return middlewares.LoggingMiddleware(mux)
 }
 
-// function making handler with IsAdmin middleware
+// function making handler from RoleBasedAccess middleware with entities.Admin role
 func (h *Handler) makeAdminHandler(handleFunc func(w http.ResponseWriter, r *http.Request)) http.Handler {
-	return middlewares.IsAdmin(h.cfg.Secret, http.HandlerFunc(handleFunc))
+	return middlewares.RoleBasedAccess(h.cfg.Secret, entities.Admin, http.HandlerFunc(handleFunc))
+}
+
+func (h *Handler) makeWorkerHandler(handleFunc func(w http.ResponseWriter, r *http.Request)) http.Handler {
+	return middlewares.RoleBasedAccess(h.cfg.Secret, entities.Worker, http.HandlerFunc(handleFunc))
 }

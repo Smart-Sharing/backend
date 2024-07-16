@@ -18,13 +18,18 @@ type User interface {
 }
 
 type Machine interface {
+	InsertMachine(machineId, ipAddr string) (*entities.Machine, error)
 	GetMachineByID(machineId string) (*entities.Machine, error)
 	GetAllMachines() ([]entities.Machine, error)
+	UpdateMachineIPAddr(machineId, ipAddr string) (*entities.Machine, error)
 }
 
 type Session interface {
+	InsertSession(workerId int, machineId string) (*entities.Session, error)
 	GetSessionByID(sessionId int) (*entities.Session, error)
 	GetAllSessions() ([]entities.Session, error)
+	GetActiveSessionsByMachineID(machineId string) ([]entities.Session, error)
+	GetActiveSessionsByUserID(userId int) ([]entities.Session, error)
 }
 
 type Auth interface {

@@ -2,6 +2,7 @@ CREATE TABLE IF NOT EXISTS machines(
 	id varchar(16) NOT NULL,
 	state integer DEFAULT 0,
   voltage integer DEFAULT 0,
+  ip_addr varchar(16) NOT NULL,
 		
 	CHECK (state IN (0, 1)),
   CHECK (voltage >= 0),

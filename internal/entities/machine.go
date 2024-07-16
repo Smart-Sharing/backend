@@ -9,4 +9,5 @@ type Machine struct {
 	Id      string       `db:"id" json:"id"`
 	State   MachineState `db:"state" json:"state"`
 	Voltage int          `db:"voltage" json:"voltage"`
+	IPAddr  string       `db:"ip_addr" json:"ipAddr"`
 }
