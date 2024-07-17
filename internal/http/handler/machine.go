@@ -109,6 +109,7 @@ func (h *Handler) UnlockMachine(w http.ResponseWriter, r *http.Request) {
 
 	machine, err := h.service.GetMachineByID(respData.MachineId)
 	if err != nil {
+		slog.Error("machine with such id doesn't exists", slog.String("machine_id", respData.MachineId))
 		if err = utils.RespondWith400(w, "machine with such id doesn't exists"); err != nil {
 			if err = utils.RespondWith500(w); err != nil {
 				slog.Error("failed to respond with 500 during machine with such id doesn't exists",
@@ -124,6 +125,10 @@ func (h *Handler) UnlockMachine(w http.ResponseWriter, r *http.Request) {
 
 	machineSessions, err := h.service.GetActiveSessionsByMachineID(machine.Id)
 	if err != nil {
+		slog.Error("failed to get active sessions by machineId",
+			slog.String("machine_id", respData.MachineId),
+			slog.String("error", err.Error()),
+		)
 		if err = utils.RespondWith500(w); err != nil {
 			slog.Error("failed to respond with 500 during getting active sessions by machine id",
 				slog.String("machine_id", respData.MachineId),
@@ -151,8 +156,12 @@ func (h *Handler) UnlockMachine(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userId, ok := r.Context().Value("user_id").(int)
+	userId, ok := r.Context().Value("user_id").(int64)
+	slog.Info("USER_ID from context", slog.Int64("userId", userId))
 	if !ok {
+		slog.Error("failed to get user_id from r.Context",
+			slog.Bool("ok", ok),
+		)
 		if err = utils.RespondWith500(w); err != nil {
 			slog.Error("failed to respond with 500 on failed get user_id from request context",
 				slog.String("machine_id", respData.MachineId),
@@ -165,8 +174,12 @@ func (h *Handler) UnlockMachine(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := h.service.GetUserByID(userId)
+	user, err := h.service.GetUserByID(int(userId))
 	if err != nil {
+		slog.Error("failed get user by id",
+			slog.Int("user_id", int(userId)),
+			slog.String("error", err.Error()),
+		)
 		if err = utils.RespondWith500(w); err != nil {
 			slog.Error("failed to respond with 500 on failed get user by id",
 				slog.String("machine_id", respData.MachineId),
@@ -180,7 +193,11 @@ func (h *Handler) UnlockMachine(w http.ResponseWriter, r *http.Request) {
 
 	userSessions, err := h.service.GetActiveSessionsByUserID(user.Id)
 	if err != nil {
-		if err = utils.RespondWith500(w); err != nil {
+		slog.Error("failed to get user active sessions",
+			slog.Int("user_id", int(userId)),
+			slog.String("error", err.Error()),
+		)
+		if err = utils.RespondWith400(w, "failed to get user active sessions"); err != nil {
 			slog.Error("failed to respond 500 on failed get active sessions by user_id",
 				slog.Int("user_id", user.Id),
 				slog.String("path", r.URL.Path),
@@ -220,6 +237,11 @@ func (h *Handler) UnlockMachine(w http.ResponseWriter, r *http.Request) {
 
 	session, err := h.service.InsertSession(user.Id, machine.Id)
 	if err != nil {
+		slog.Error("failed to insert new session",
+			slog.Int("user_id", int(userId)),
+			slog.String("machine_id", machine.Id),
+			slog.String("error", err.Error()),
+		)
 		if err = utils.RespondWith500(w); err != nil {
 			slog.Error("failed to respond 500 on failed respond with json (session_id)",
 				slog.Int("user_id", user.Id),

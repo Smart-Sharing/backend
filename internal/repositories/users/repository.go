@@ -14,6 +14,19 @@ func NewRepository(db *sqlx.DB) *repository {
 	return &repository{db: db}
 }
 
+func (r *repository) InsertUser(name, phoneNumber, jobPosition, password string) (*entities.User, error) {
+	var user entities.User
+	q := `
+		INSERT INTO users(name, phone_number, job_position, password)
+		VALUES ($1, $2, $3, $4)
+		RETURNING;
+	`
+	if err := r.db.QueryRowx(q, name, phoneNumber, jobPosition, password).StructScan(&user); err != nil {
+		return nil, errors.Wrap(err, "inserting new user")
+	}
+	return &user, nil
+}
+
 func (r *repository) GetAllUsers() ([]entities.User, error) {
 	users := make([]entities.User, 0)
 

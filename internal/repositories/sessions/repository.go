@@ -15,13 +15,22 @@ func NewRepository(db *sqlx.DB) *repository {
 }
 
 func (r *repository) InsertSession(userId int, machineId string) (*entities.Session, error) {
-	var newSession entities.Session
-	q := `INSERT INTO sessions (machine_id, worker_id) VALUES ($1, $2);`
+	var (
+		session entities.Session
+		id      int
+	)
 
-	if err := r.db.QueryRowx(q, machineId, userId).StructScan(&newSession); err != nil {
-		return nil, errors.Wrap(err, "insert new session")
+	q := `INSERT INTO sessions (machine_id, worker_id) VALUES ($1, $2) RETURNING id;`
+
+	if err := r.db.QueryRowx(q, machineId, userId).Scan(&id); err != nil {
+		return nil, errors.Wrap(err, "insert new sessiona and scan id")
 	}
-	return &newSession, nil
+
+	q = `SELECT * FROM sessions WHERE id = $1`
+	if err := r.db.Get(&session, q, id); err != nil {
+		return nil, err
+	}
+	return &session, nil
 }
 
 func (r *repository) GetSessionByID(sessionId int) (*entities.Session, error) {

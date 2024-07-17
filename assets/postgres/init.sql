@@ -40,9 +40,10 @@ CREATE TABLE IF NOT EXISTS sessions(
 -- CREATE TEST DATA into database
 INSERT INTO users(name, phone_number, job_position, password) 
   VALUES ('USER1', '89099769897', 'worker', '12345678'), 
-         ('SUPER-USER', '89090001122', 'admin', 'some-password123');
+         ('SUPER-USER', '89090001122', 'admin', 'some-password123'),
+         ('Oleg Boss', '88889997766', 'admin', 'boss-password321');
 
-INSERT INTO machines(id) VALUES ('1FGH345'), ('1ASD987');
+INSERT INTO machines(id, state, ip_addr) VALUES ('1FGH345', 1, '192.888.90.12'), ('1ASD987', 1, '197.459.80.70');
 
 INSERT INTO sessions(machine_id, worker_id) VALUES ('1FGH345', 2), ('1ASD987', 1);
 

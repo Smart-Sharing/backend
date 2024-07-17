@@ -122,19 +122,18 @@ func RoleBasedAccess(secret string, requiredJob entities.UserJob, next http.Hand
 			slog.Any("token", token),
 			slog.Any("token_claims", claims),
 		)
-		userId, ok := claims["id"]
+		userId, ok := claims["id"].(float64)
 		if !ok {
-			slog.Error("failed to get 'id' from claims", slog.Any("claims", claims))
-			next.ServeHTTP(w, r)
-			return
-		}
-		id, ok := userId.(int)
-		if !ok {
-			slog.Error("failed to cast useId to int", slog.Any("userId", userId))
+			slog.Error("failed to get 'id' from claims",
+				slog.Any("claims", claims),
+				slog.Float64("userId", userId),
+				slog.Bool("ok", ok),
+			)
 			next.ServeHTTP(w, r)
 			return
 		}
 
+		id := int64(userId)
 		ctx := context.WithValue(context.Background(), "user_id", id)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
