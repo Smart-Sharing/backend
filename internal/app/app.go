@@ -29,7 +29,10 @@ func (a *App) Run() error {
 	if err != nil {
 		panic(errors.Wrap(err, "failed to connect to postgres db"))
 	}
+	slog.Info("successfully connect to database")
+
 	handler := handler.New(db, a.cfg).MakeHTTPHandler()
+	slog.Info("successfully initialize http handlers")
 
 	addr := fmt.Sprintf("%s:%d", a.cfg.App.Addr, a.cfg.App.Port)
 	slog.Info("staring app", slog.String("address", addr))
