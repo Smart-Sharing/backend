@@ -9,3 +9,6 @@ postgres:
   user: "postgres"
   password: "postgres"
   db: "sharing_machines"
+# settings for microcontroller (arduino)
+mc:
+  request_timeout: 1s

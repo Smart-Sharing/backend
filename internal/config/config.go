@@ -14,6 +14,7 @@ type Config struct {
 	Secret   string        `yaml:"secret" env-required:"true"`
 	App      AppConfig
 	Postgres PostgresConfig
+	MC       MicrocontrollerConfig
 }
 
 type AppConfig struct {
@@ -27,6 +28,10 @@ type PostgresConfig struct {
 	User     string `yaml:"user"`
 	Password string `yaml:"password"`
 	DB       string `yaml:"db"`
+}
+
+type MicrocontrollerConfig struct {
+	RequestTimeout time.Duration `yaml:"request_timeout" env-required:"true"`
 }
 
 // Function will panic if can not read config file or environment variables

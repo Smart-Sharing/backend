@@ -2,6 +2,7 @@ CREATE TABLE IF NOT EXISTS machines(
 	id varchar(16) NOT NULL,
 	state integer DEFAULT 0,
   voltage integer DEFAULT 0,
+  ip_addr varchar(16) NOT NULL,
 		
 	CHECK (state IN (0, 1)),
   CHECK (voltage >= 0),
@@ -39,10 +40,11 @@ CREATE TABLE IF NOT EXISTS sessions(
 -- CREATE TEST DATA into database
 INSERT INTO users(name, phone_number, job_position, password) 
   VALUES ('USER1', '89099769897', 'worker', '12345678'), 
-         ('SUPER-USER', '89090001122', 'admin', 'some-password123');
+         ('SUPER-USER', '89090001122', 'admin', 'some-password123'),
+         ('Oleg Boss', '88889997766', 'admin', 'boss-password321');
 
-INSERT INTO machines(id) VALUES ('1FGH345'), ('1ASD987');
-
-INSERT INTO sessions(machine_id, worker_id) VALUES ('1FGH345', 2), ('1ASD987', 1);
-
+INSERT INTO machines(id, state, ip_addr) 
+VALUES ('1FGH345', 0, 'localhost:8000'), 
+       ('1ASD987', 0, 'localhost:8000'),
+       ('1TREW89', 0, 'localhost:8000');
 

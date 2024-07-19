@@ -14,12 +14,20 @@ func NewRepository(db *sqlx.DB) *repository {
 	return &repository{db: db}
 }
 
-func (r *repository) InsertMachine(machineId string) error {
-	q := `INSERT INTO machines (id) VALUES ($1)`
-	if _, err := r.db.Exec(q, machineId); err != nil {
-		return errors.Wrap(err, "insert machine")
+func (r *repository) InsertMachine(machineId, ipAddr string) (*entities.Machine, error) {
+	var newMachine entities.Machine
+
+	q := `INSERT INTO machines (id, ip_addr) VALUES ($1, $2);`
+	if _, err := r.db.Queryx(q, machineId, ipAddr); err != nil {
+		return nil, errors.Wrap(err, "insert machine")
 	}
-	return nil
+
+	q = `SELECT * FROM machines WHERE id = $1;`
+	if err := r.db.Get(&newMachine, q, machineId); err != nil {
+		return nil, errors.Wrap(err, "select inserted machine")
+	}
+
+	return &newMachine, nil
 }
 
 func (r *repository) GetMachineByID(machineId string) (*entities.Machine, error) {
@@ -35,10 +43,36 @@ func (r *repository) GetMachineByID(machineId string) (*entities.Machine, error)
 
 func (r *repository) GetAllMachines() ([]entities.Machine, error) {
 	machines := make([]entities.Machine, 0)
+
 	q := `SELECT * FROM machines`
 	if err := r.db.Select(&machines, q); err != nil {
 		return nil, errors.Wrap(err, "get all machines")
 	}
-
 	return machines, nil
+}
+
+func (r *repository) UpdateMachineIPAddr(machineId, ipAddr string) (*entities.Machine, error) {
+	var machine entities.Machine
+
+	q := `
+		UPDATE machines SET ip_addr = $1 WHERE id = $2
+		RETURNING *;
+	`
+	if err := r.db.QueryRowx(q, ipAddr, machineId).StructScan(&machine); err != nil {
+		return nil, errors.Wrap(err, "failed to update machine's ipAddr")
+	}
+	return &machine, nil
+}
+
+func (r *repository) UpdateMachineState(machineId string, state entities.MachineState) (*entities.Machine, error) {
+	var machine entities.Machine
+
+	q := `
+		UPDATE machines SET state = $1 WHERE id = $2
+		RETURNING *;
+	`
+	if err := r.db.QueryRowx(q, state, machineId).StructScan(&machine); err != nil {
+		return nil, errors.Wrap(err, "failed to update machine's ipAddr")
+	}
+	return &machine, nil
 }

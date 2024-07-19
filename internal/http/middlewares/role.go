@@ -1,6 +1,7 @@
 package middlewares
 
 import (
+	"context"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -9,7 +10,8 @@ import (
 	"github.com/ecol-master/sharing-wh-machines/internal/utils"
 )
 
-func IsAdmin(secret string, next http.Handler) http.Handler {
+// role - the minimal role level which will have access to resource
+func RoleBasedAccess(secret string, requiredJob entities.UserJob, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		token := r.Header["Authorization"]
 
@@ -53,9 +55,9 @@ func IsAdmin(secret string, next http.Handler) http.Handler {
 			return
 		}
 
-		exp, ok := claims["exp"]
+		exp, ok := claims["exp"].(float64)
 		if !ok {
-			slog.Error("failed to extract	`exp` from token claims")
+			slog.Error("failed to extract	`exp` from token claims", slog.Any("exp", exp))
 			if err := utils.RespondWith500(w); err != nil {
 				slog.Error("failed to respond with 500 on error with extract `exp` from token claims",
 					slog.String("path", r.URL.Path),
@@ -67,23 +69,9 @@ func IsAdmin(secret string, next http.Handler) http.Handler {
 			return
 		}
 
-		expUnix, ok := exp.(int64)
-		if !ok {
-			slog.Error("failed to convert `exp` to int64 (Unix time)")
-			if err := utils.RespondWith500(w); err != nil {
-				slog.Error("failed to respond with 500 on error with converting `exp` to int64 (Unix time)",
-					slog.String("path", r.URL.Path),
-					slog.String("method", r.Method),
-					slog.Any("token", token),
-					slog.Any("exp", exp),
-					slog.String("error", err.Error()),
-				)
-			}
-			return
-		}
-
+		expTime := int64(exp)
 		// Function validating token
-		if tokenExpire(expUnix) {
+		if tokenExpire(expTime) {
 			if err := utils.RespondWith401(w, "token is expired"); err != nil {
 				if err = utils.RespondWith500(w); err != nil {
 					slog.Error("failed to respond with 500 on error with token expired",
@@ -100,7 +88,20 @@ func IsAdmin(secret string, next http.Handler) http.Handler {
 		}
 
 		userJob, ok := claims["job_position"]
-		if !ok || userJob != entities.Admin {
+		if !ok {
+			if err := utils.RespondWith500(w); err != nil {
+				slog.Error("failed to respond with 500 on failed get job_position from claims",
+					slog.String("path", r.URL.Path),
+					slog.String("method", r.Method),
+					slog.Any("token", token),
+					slog.String("error", err.Error()),
+				)
+			}
+			return
+		}
+
+		job, ok := userJob.(entities.UserJob)
+		if !ok || !hasUserPermission(job, requiredJob) {
 			if err := utils.RespondWith400(w, "user have no access to this resource"); err != nil {
 				if err := utils.RespondWith500(w); err != nil {
 					slog.Error("failed to respond with 500 on user have no permissions to resourse",
@@ -121,6 +122,19 @@ func IsAdmin(secret string, next http.Handler) http.Handler {
 			slog.Any("token", token),
 			slog.Any("token_claims", claims),
 		)
-		next.ServeHTTP(w, r)
+		userId, ok := claims["id"].(float64)
+		if !ok {
+			slog.Error("failed to get 'id' from claims",
+				slog.Any("claims", claims),
+				slog.Float64("userId", userId),
+				slog.Bool("ok", ok),
+			)
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		id := int64(userId)
+		ctx := context.WithValue(context.Background(), "user_id", id)
+		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

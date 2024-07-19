@@ -69,5 +69,4 @@ func (h *Handler) GetMachineByID(w http.ResponseWriter, r *http.Request) {
 			)
 		}
 	}
-
 }
