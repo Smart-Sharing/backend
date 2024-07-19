@@ -2,6 +2,7 @@ version: "3.9"
 
 services:
   postgres:
+    container_name: storage
     image: postgres:13.3
     restart: unless-stopped
     volumes:
@@ -13,7 +14,29 @@ services:
       POSTGRES_DB: "sharing_machines"
 
     ports:
-      - "5400:5432"
+      - "5432:5432"
+    networks:
+      - netw
+
+  #
+  app:
+    build:
+      context: .
+      dockerfile: ./docker/app.Dockerfile
+    container_name: app
+    hostname: app
+    platform: linux/x86_64
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    networks:
+      - netw
+
+networks:
+  netw:
+    name: custom_netw
+    driver: bridge
+    external: true
 
 volumes:
   pgdata:
