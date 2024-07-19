@@ -2,7 +2,7 @@
 
 
 # PostgreSQL DB
-** How to up project databse**:
+**How to up project databse**:
 ```
 docker compose up -d
 ```
