@@ -192,7 +192,11 @@ func (h *Handler) LockMachine(w http.ResponseWriter, r *http.Request) {
 	// TODO: ответить, что добавление сессии прошло успешно
 	slog.Info("session was successfully stopped", slog.Int("session_id", session.Id))
 
-	if err = utils.SuccessRespondWith200(w, "successfullly lock machine"); err != nil {
+	payload := struct {
+		Msg string `json:"msg"`
+	}{Msg: "successfullly lock machine"}
+
+	if err = utils.SuccessRespondWith200(w, payload); err != nil {
 		slog.Error("failed to respond with 200 on lock machine",
 			slog.String("machine_id", machine.Id),
 			slog.Int("user_id", user.Id),

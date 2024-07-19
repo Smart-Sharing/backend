@@ -76,7 +76,7 @@ func (r *repository) GetActiveSessionsByUserID(userId int) ([]entities.Session, 
 func (r *repository) GetActiveSessionsByMachineAndUser(machineId string, userId int) ([]entities.Session, error) {
 	sessions := make([]entities.Session, 0)
 
-	q := `SELECT * FROM sessions WHERE machine_id = $1 AND worker_id = $2`
+	q := `SELECT * FROM sessions WHERE machine_id = $1 AND worker_id = $2 AND state = 0;`
 	if err := r.db.Select(&sessions, q, machineId, userId); err != nil {
 		return nil, errors.Wrap(err, "select all sessions by machineId and userId")
 	}
