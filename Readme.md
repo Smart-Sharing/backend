@@ -9,7 +9,7 @@ docker compose up -d
 
 Run app:
 ```
-go build cmd/main.go
+go build cmd/app/main.go
 ./main --config=config/local.yml
 ```
 
