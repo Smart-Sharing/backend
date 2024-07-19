@@ -22,6 +22,7 @@ type Machine interface {
 	GetMachineByID(machineId string) (*entities.Machine, error)
 	GetAllMachines() ([]entities.Machine, error)
 	UpdateMachineIPAddr(machineId, ipAddr string) (*entities.Machine, error)
+	UpdateMachineState(machineId string, state entities.MachineState) (*entities.Machine, error)
 }
 
 type Session interface {
@@ -30,6 +31,8 @@ type Session interface {
 	GetAllSessions() ([]entities.Session, error)
 	GetActiveSessionsByMachineID(machineId string) ([]entities.Session, error)
 	GetActiveSessionsByUserID(userId int) ([]entities.Session, error)
+	GetActiveSessionsByMachineAndUser(machineId string, userId int) ([]entities.Session, error)
+	UpdateSessionState(sessionId int, state entities.SessionState) (*entities.Session, error)
 }
 
 type Auth interface {

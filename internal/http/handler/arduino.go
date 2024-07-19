@@ -89,8 +89,8 @@ func (h *Handler) RegisterMachine(w http.ResponseWriter, r *http.Request) {
 	}
 
 	payload := struct {
-		CurrentStatus int `json:"current_status"`
-	}{CurrentStatus: machine.State}
+		CurrentState int `json:"current_state"`
+	}{CurrentState: machine.State}
 
 	if err = utils.SuccessRespondWith200(w, payload); err != nil {
 		if err = utils.RespondWith500(w); err != nil {

@@ -63,3 +63,16 @@ func (r *repository) UpdateMachineIPAddr(machineId, ipAddr string) (*entities.Ma
 	}
 	return &machine, nil
 }
+
+func (r *repository) UpdateMachineState(machineId string, state entities.MachineState) (*entities.Machine, error) {
+	var machine entities.Machine
+
+	q := `
+		UPDATE machines SET state = $1 WHERE id = $2
+		RETURNING *;
+	`
+	if err := r.db.QueryRowx(q, state, machineId).StructScan(&machine); err != nil {
+		return nil, errors.Wrap(err, "failed to update machine's ipAddr")
+	}
+	return &machine, nil
+}

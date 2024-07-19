@@ -72,3 +72,30 @@ func (r *repository) GetActiveSessionsByUserID(userId int) ([]entities.Session, 
 	}
 	return sessions, nil
 }
+
+func (r *repository) GetActiveSessionsByMachineAndUser(machineId string, userId int) ([]entities.Session, error) {
+	sessions := make([]entities.Session, 0)
+
+	q := `SELECT * FROM sessions WHERE machine_id = $1 AND worker_id = $2`
+	if err := r.db.Select(&sessions, q, machineId, userId); err != nil {
+		return nil, errors.Wrap(err, "select all sessions by machineId and userId")
+	}
+	return sessions, nil
+}
+
+func (r *repository) UpdateSessionState(sessionId int, state entities.SessionState) (*entities.Session, error) {
+	var (
+		id      int
+		session entities.Session
+	)
+	q := `UPDATE sessions SET state = $1 WHERE id = $2 RETURNING id;`
+	if err := r.db.QueryRowx(q, state, sessionId).Scan(&id); err != nil {
+		return nil, errors.Wrap(err, "update session")
+	}
+	q = `SELECT * FROM sessions WHERE id = $1`
+	if err := r.db.Get(&session, q, sessionId); err != nil {
+		return nil, errors.Wrap(err, "select updated session")
+	}
+
+	return &session, nil
+}

@@ -25,7 +25,7 @@ func New(db *sqlx.DB, cfg *config.Config) *Handler {
 func (h *Handler) MakeHTTPHandler() http.Handler {
 	mux := http.NewServeMux()
 
-	// api methods
+	// api methods for web-application
 	mux.Handle("GET /get_all_users", h.makeAdminHandler(h.GetAllUsers))
 	mux.Handle("GET /get_user", h.makeAdminHandler(h.GetUserByID))
 
@@ -38,10 +38,11 @@ func (h *Handler) MakeHTTPHandler() http.Handler {
 	// auth
 	mux.HandleFunc("POST /login", h.Login)
 
-	// rent machines
+	// Lock, Unlock, Pause handler
 	mux.Handle("POST /unlock_machine", h.makeWorkerHandler(h.UnlockMachine))
+	mux.Handle("POST /lock_machine", h.makeWorkerHandler(h.LockMachine))
 
-	// arduino
+	// handler to register (or make active after failed) arduino in system
 	mux.Handle("POST /register_machine", http.HandlerFunc(h.RegisterMachine))
 
 	// logging all request with LoggingMiddleware
