@@ -1,8 +1,6 @@
 package handler
 
 import (
-	"encoding/json"
-	"io"
 	"log/slog"
 	"net/http"
 
@@ -11,43 +9,26 @@ import (
 )
 
 func (h *Handler) LockMachine(w http.ResponseWriter, r *http.Request) {
+	op := slog.String("op", "handler.LockMachine")
 	// TODO: распарсить данные для работы
 	var data struct {
 		MachineId string `json:"machine_id"`
 	}
 
-	bytes, err := io.ReadAll(r.Body)
+	err := utils.ParseRequestData(r.Body, &data)
 	if err != nil {
-		slog.Error("failed to read r.Body in LockMachine", slog.String("error", err.Error()))
-		if err = utils.RespondWith500(w); err != nil {
-			slog.Error("failed to respond 500 on failed to read r.Body in LockMachine",
-				slog.String("path", r.URL.Path),
-				slog.String("method", r.Method),
-				slog.String("error", err.Error()),
-			)
-		}
-		return
-	}
-
-	err = json.Unmarshal(bytes, &data)
-	if err != nil {
-		slog.Error("failed to unmarhsal bytes from r.Body in LockMachine", slog.String("error", err.Error()))
-		if err = utils.RespondWith500(w); err != nil {
-			slog.Error("failed to respond 500 on failed to unmarshal bytes in LockMachine",
-				slog.String("path", r.URL.Path),
-				slog.String("method", r.Method),
-				slog.String("error", err.Error()),
-			)
+		slog.Error("failed parse request data", op, slog.String("error", err.Error()))
+		if err = utils.RespondWith400(w, "failed parse request body"); err != nil {
+			slog.Error("failed respond with 400", slog.String("error", err.Error()))
 		}
 		return
 	}
 
 	machine, err := h.service.GetMachineByID(data.MachineId)
 	if err != nil {
-		slog.Error("failed to get machine by id from request data",
-			slog.String("data_machine_id", data.MachineId),
-			slog.String("error", err.Error()),
-		)
+		slog.Error("get machine by id", op, slog.String("machine_id", data.MachineId),
+			slog.String("error", err.Error()))
+
 		if err = utils.RespondWith500(w); err != nil {
 			slog.Error("failed to respond 500 on failed to get machine by id",
 				slog.String("data_machine_id", data.MachineId),
@@ -61,7 +42,7 @@ func (h *Handler) LockMachine(w http.ResponseWriter, r *http.Request) {
 
 	userId, ok := r.Context().Value("user_id").(int64)
 	if !ok {
-		slog.Error("failed to get `user_id` value from r.Context", slog.Any("context", r.Context()))
+		slog.Error("get `user_id` from r.Context", op, slog.Any("context", r.Context()))
 
 		if err = utils.RespondWith500(w); err != nil {
 			slog.Error("failed to respond 500 on failed to get 'use_id' value from r.Context",
@@ -76,8 +57,7 @@ func (h *Handler) LockMachine(w http.ResponseWriter, r *http.Request) {
 
 	user, err := h.service.GetUserByID(int(userId))
 	if err != nil {
-		slog.Error("failed to get user by id", slog.Int64("user_id", userId),
-			slog.String("error", err.Error()))
+		slog.Error("get user by id", op, slog.Int64("user_id", userId), slog.String("error", err.Error()))
 
 		if err = utils.RespondWith500(w); err != nil {
 			slog.Error("failed to respond 500 on failed to get user by id",
@@ -90,46 +70,15 @@ func (h *Handler) LockMachine(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: проверить, есть ли вообще такая активная сессия (на всякий случай)
-	sessions, err := h.service.GetActiveSessionsByMachineAndUser(machine.Id, user.Id)
+	session, err := canLockMachine(h.service, user, machine)
 	if err != nil {
-		slog.Error("failed go get sessions by machine and user in LockMachine",
-			slog.String("machine_id", machine.Id), slog.Int("user_id", user.Id))
+		slog.Error("tryLockMachine", op, slog.Int("user_id", user.Id),
+			slog.String("machine_id", machine.Id), slog.String("error", err.Error()))
 
-		if err = utils.RespondWith500(w); err != nil {
-			slog.Error("failed to respond 500 on failed to get user by id",
+		if err = utils.RespondWith400(w, "user can not lock machine"); err != nil {
+			slog.Error("failed to respond 500 on failed to try lock machine",
 				slog.Int64("user_id", userId),
-				slog.String("path", r.URL.Path),
-				slog.String("method", r.Method),
-				slog.String("error", err.Error()),
-			)
-		}
-
-		return
-	}
-	if len(sessions) == 0 {
-		slog.Error("user has no active session with that machine",
-			slog.String("machine_id", machine.Id), slog.Int("user_id", user.Id))
-
-		if err = utils.RespondWith400(w, "user has no active sessions with that machine"); err != nil {
-			slog.Error("failed to respond with 400 on user has no active sessions with machine",
 				slog.String("machine_id", machine.Id),
-				slog.Int("user_id", user.Id),
-				slog.String("path", r.URL.Path),
-				slog.String("method", r.Method),
-				slog.String("error", err.Error()),
-			)
-		}
-		return
-	}
-
-	if len(sessions) > 1 {
-		slog.Error("user has several sessions with a machine", slog.Int("sessions_count", len(sessions)),
-			slog.String("machine_id", machine.Id), slog.Int("user_id", user.Id))
-
-		if err = utils.RespondWith500(w); err != nil {
-			slog.Error("failed to respond 500 on failed to get user by id",
-				slog.Int64("user_id", userId),
 				slog.String("path", r.URL.Path),
 				slog.String("method", r.Method),
 				slog.String("error", err.Error()),
@@ -161,13 +110,13 @@ func (h *Handler) LockMachine(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// TODO: Отправить данные на машину, для обработки
-	if recieved := sendMachineCurrentState(machine, h.cfg.MC.RequestTimeout); !recieved {
-		slog.Error("failed to send machine new current state Lock.Machine",
-			slog.String("machine_id", machine.Id), slog.Int("new_state", machine.State))
+	if err := sendMachineCurrentState(machine, h.cfg.MC.RequestTimeout); err != nil {
+		slog.Error("send machine new state", slog.String("machine_id", machine.Id),
+			slog.Int("new_state", machine.State), slog.String("error", err.Error()))
 	}
 
 	// TODO: завершить сессию
-	session, err := h.service.UpdateSessionState(sessions[0].Id, entities.SessionStopped)
+	session, err = h.service.UpdateSessionState(session.Id, entities.SessionStopped)
 	if err != nil {
 		// TODO:
 		slog.Error("failed to update session state UnlockMachine",

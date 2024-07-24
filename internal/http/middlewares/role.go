@@ -13,6 +13,7 @@ import (
 // role - the minimal role level which will have access to resource
 func RoleBasedAccess(secret string, requiredJob entities.UserJob, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		op := slog.String("op", "middlewares.RoleBasedAccess")
 		token := r.Header["Authorization"]
 
 		if len(token) == 0 || token[0] == "" {
@@ -44,6 +45,7 @@ func RoleBasedAccess(secret string, requiredJob entities.UserJob, next http.Hand
 
 		claims, ok := extractClaims(tokenData[1], secret)
 		if !ok {
+			slog.Error("failed extract token claims", op)
 			if err := utils.RespondWith500(w); err != nil {
 				slog.Error("failed to respond with 500 on error with parse token claims",
 					slog.String("path", r.URL.Path),
@@ -58,6 +60,7 @@ func RoleBasedAccess(secret string, requiredJob entities.UserJob, next http.Hand
 		exp, ok := claims["exp"].(float64)
 		if !ok {
 			slog.Error("failed to extract	`exp` from token claims", slog.Any("exp", exp))
+
 			if err := utils.RespondWith500(w); err != nil {
 				slog.Error("failed to respond with 500 on error with extract `exp` from token claims",
 					slog.String("path", r.URL.Path),
@@ -89,6 +92,7 @@ func RoleBasedAccess(secret string, requiredJob entities.UserJob, next http.Hand
 
 		userJob, ok := claims["job_position"]
 		if !ok {
+			slog.Error("get job position from claims", op)
 			if err := utils.RespondWith500(w); err != nil {
 				slog.Error("failed to respond with 500 on failed get job_position from claims",
 					slog.String("path", r.URL.Path),
@@ -122,6 +126,7 @@ func RoleBasedAccess(secret string, requiredJob entities.UserJob, next http.Hand
 			slog.Any("token", token),
 			slog.Any("token_claims", claims),
 		)
+
 		userId, ok := claims["id"].(float64)
 		if !ok {
 			slog.Error("failed to get 'id' from claims",
