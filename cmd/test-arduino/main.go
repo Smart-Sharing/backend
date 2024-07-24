@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 )
@@ -19,14 +20,17 @@ func main() {
 }
 
 func MachineSuccessHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Printf("handle machine 1")
 	w.WriteHeader(http.StatusOK)
 }
 
 func MachineFailedHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Printf("handle machine 2")
 	w.WriteHeader(http.StatusNotFound)
 }
 
 func MachineTimeoutRequestHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Printf("handle machine 3")
 	time.Sleep(time.Second * 10)
 	w.WriteHeader(http.StatusNotFound)
 }

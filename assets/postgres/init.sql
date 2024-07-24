@@ -44,7 +44,7 @@ INSERT INTO users(name, phone_number, job_position, password)
          ('Oleg Boss', '88889997766', 'admin', 'boss-password321');
 
 INSERT INTO machines(id, state, ip_addr) 
-VALUES ('1FGH345', 0, 'localhost:8000'), 
-       ('1ASD987', 0, 'localhost:8000'),
+VALUES ('1FGH345', 0, '0.0.0.0:8000'), 
+       ('1ASD987', 0, '0.0.0.0:8000'),
        ('1TREW89', 0, 'localhost:8000');
 
