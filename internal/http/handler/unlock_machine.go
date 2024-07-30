@@ -1,9 +1,7 @@
 package handler
 
 import (
-	"encoding/json"
 	"fmt"
-	"io"
 	"log/slog"
 	"net/http"
 
@@ -12,36 +10,54 @@ import (
 )
 
 func (h *Handler) UnlockMachine(w http.ResponseWriter, r *http.Request) {
-	// parse MachineId from request
+	op := slog.String("op", "handler.UnlockMachine")
+
 	var respData struct {
 		MachineId string `json:"machine_id"`
 	}
 
-	dataBytes, err := io.ReadAll(r.Body)
+	err := utils.ParseRequestData(r.Body, &respData)
 	if err != nil {
-		slog.Error("failed to read UnlockMachine request body")
+		slog.Error("failed parse request data", op, slog.String("error", err.Error()))
+
 		if err := utils.RespondWith500(w); err != nil {
-			slog.Error("failed to respond with 500 during failed to unmarshal UnlockMachine request body",
+			slog.Error("respond with 500 during failed parse request body",
 				slog.String("path", r.URL.Path),
 				slog.String("method", r.Method),
 				slog.String("error", err.Error()),
 			)
 		}
 		return
+
 	}
 
-	err = json.Unmarshal(dataBytes, &respData)
-	if err != nil {
-		slog.Error("failed to unmarshal UnlockMachine request body")
-		if err := utils.RespondWith500(w); err != nil {
-			slog.Error("failed to respond with 500 during failed to unmarshal UnlockMachine request body",
-				slog.String("path", r.URL.Path),
-				slog.String("method", r.Method),
-				slog.String("error", err.Error()),
-			)
+	/*
+			dataBytes, err := io.ReadAll(r.Body)
+			if err != nil {
+					slog.Error("failed to read UnlockMachine request body")
+				if err := utils.RespondWith500(w); err != nil {
+					slog.Error("failed to respond with 500 during failed to unmarshal UnlockMachine request body",
+						slog.String("path", r.URL.Path),
+						slog.String("method", r.Method),
+						slog.String("error", err.Error()),
+					)
+				}
+				return
+			}
+
+		err = json.Unmarshal(dataBytes, &respData)
+		if err != nil {
+			slog.Error("failed to unmarshal UnlockMachine request body")
+			if err := utils.RespondWith500(w); err != nil {
+				slog.Error("failed to respond with 500 during failed to unmarshal UnlockMachine request body",
+					slog.String("path", r.URL.Path),
+					slog.String("method", r.Method),
+					slog.String("error", err.Error()),
+				)
+			}
+			return
 		}
-		return
-	}
+	*/
 
 	machine, err := h.service.GetMachineByID(respData.MachineId)
 	if err != nil {
@@ -92,11 +108,9 @@ func (h *Handler) UnlockMachine(w http.ResponseWriter, r *http.Request) {
 	}
 
 	userId, ok := r.Context().Value("user_id").(int64)
-	slog.Info("USER_ID from context", slog.Int64("userId", userId))
 	if !ok {
-		slog.Error("failed to get user_id from r.Context",
-			slog.Bool("ok", ok),
-		)
+		slog.Error("failed to get user_id from r.Context", slog.Bool("ok", ok))
+
 		if err = utils.RespondWith500(w); err != nil {
 			slog.Error("failed to respond with 500 on failed get user_id from request context",
 				slog.String("machine_id", respData.MachineId),
@@ -111,10 +125,8 @@ func (h *Handler) UnlockMachine(w http.ResponseWriter, r *http.Request) {
 
 	user, err := h.service.GetUserByID(int(userId))
 	if err != nil {
-		slog.Error("failed get user by id",
-			slog.Int("user_id", int(userId)),
-			slog.String("error", err.Error()),
-		)
+		slog.Error("failed get user by id", slog.Int("user_id", int(userId)), slog.String("error", err.Error()))
+
 		if err = utils.RespondWith500(w); err != nil {
 			slog.Error("failed to respond with 500 on failed get user by id",
 				slog.String("machine_id", respData.MachineId),
@@ -126,14 +138,12 @@ func (h *Handler) UnlockMachine(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userSessions, err := h.service.GetActiveSessionsByUserID(user.Id)
-	if err != nil {
-		slog.Error("failed to get user active sessions",
-			slog.Int("user_id", int(userId)),
-			slog.String("error", err.Error()),
-		)
-		if err = utils.RespondWith400(w, "failed to get user active sessions"); err != nil {
-			slog.Error("failed to respond 500 on failed get active sessions by user_id",
+	if err = canUnlockMachine(h.service, user, machine); err != nil {
+		slog.Error("try unlock machine", op, slog.Int("user_id", int(userId)),
+			slog.String("machine_id", machine.Id), slog.String("error", err.Error()))
+
+		if err = utils.RespondWith400(w, "user can not unlock machine"); err != nil {
+			slog.Error("failed to respond 400 on failed get active sessions by user_id",
 				slog.Int("user_id", user.Id),
 				slog.String("path", r.URL.Path),
 				slog.String("method", r.Method),
@@ -143,29 +153,10 @@ func (h *Handler) UnlockMachine(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if len(userSessions) > 0 {
-		if err = utils.RespondWith400(w, "user has another active sessions"); err != nil {
-			if err = utils.RespondWith500(w); err != nil {
-				slog.Error("failed to respond 500 on user has another active sessions",
-					slog.Int("user_id", user.Id),
-					slog.Any("user_active_sessions", userSessions),
-					slog.String("path", r.URL.Path),
-					slog.String("method", r.Method),
-					slog.String("error", err.Error()),
-				)
-			}
-		}
-		return
-	}
-
-	// ВАЖНО Перед созданием сессии надо проверить - может ли этот пользователь взять эту конкретную машину
-	// TODO: check machine can be used
-	// сделать запрос к ардуинке и проверить что машина активна
-	// сделать запрос к ардуино - получить текущий статус машины
-	// ...
-
 	machine.State = entities.MachineInUse
-	if recieved := sendMachineCurrentState(machine, h.cfg.MC.RequestTimeout); !recieved {
+	if err = sendMachineCurrentState(machine, h.cfg.MC.RequestTimeout); err != nil {
+		slog.Error("failed sendMachineCurrentState", op, slog.String("error", err.Error()))
+
 		if err = utils.RespondWith400(w, "machine can not be used at the current moment"); err != nil {
 			slog.Error("failed to respond with 400 on machine is not active",
 				slog.Any("machine", machine),
@@ -176,13 +167,6 @@ func (h *Handler) UnlockMachine(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-
-	// TODO: check user can rent this machine
-	// ...
-	// ...
-	// ...
-
-	// Если все хорошо, то изменяю значения в базе
 
 	_, err = h.service.UpdateMachineState(machine.Id, machine.State)
 	if err != nil {

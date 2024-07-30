@@ -1,7 +1,12 @@
 # Sharing Warehouse Machines
 
+# Build application
+```
+docker network create netw
+docker compose up
+```
 
-# PostgreSQL DB
+# PostgreSQL DB (old)
 **How to up project databse**:
 ```
 docker compose up -d

@@ -8,65 +8,47 @@ import (
 )
 
 func (h *Handler) GetAllMachines(w http.ResponseWriter, r *http.Request) {
+	op := slog.String("op", "handler.GetAllMachines")
+
 	machines, err := h.service.GetAllMachines()
 	if err != nil {
-		slog.Error(
-			"failed get all users",
-			slog.String("path", r.URL.Path),
-			slog.String("method", r.Method),
-			slog.String("error", err.Error()),
-		)
+		slog.Error("get all machines", op, slog.String("error", err.Error()))
 
-		if err := utils.RespondWith500(w); err != nil {
-			slog.Error("failed respond with error", slog.Int("status", 500))
+		if err := utils.RespondWith400(w, "failed to get all machines"); err != nil {
+			slog.Error("failed respond with 400", op, slog.String("error", err.Error()))
 		}
 		return
 	}
 
 	if err := utils.RespondWithJSON(w, 200, machines); err != nil {
-		slog.Error("failed to respond with json with users",
-			slog.String("path", r.URL.Path),
-			slog.String("method", r.Method),
-			slog.String("error", err.Error()),
-		)
-
-		if err := utils.RespondWith500(w); err != nil {
-			slog.Error("failed respond with error", slog.Int("status", 500))
-		}
+		slog.Error("failed respond with JSON", op, slog.String("error", err.Error()))
 	}
 }
 
 func (h *Handler) GetMachineByID(w http.ResponseWriter, r *http.Request) {
+	op := slog.String("op", "handler.GetmachineByID")
+
 	machineId := r.URL.Query().Get("machine_id")
 	machine, err := h.service.GetMachineByID(machineId)
 
 	if err != nil {
-		slog.Error("failed to get machine from db",
-			slog.String("machine_id", machineId),
-			slog.String("error", err.Error()),
-		)
-		if err = utils.RespondWith500(w); err != nil {
-			slog.Error("failed to respond with 500",
-				slog.String("path", r.URL.Path),
-				slog.String("method", r.Method),
-				slog.String("error", err.Error()),
-			)
+		slog.Error("get machine from db", op, slog.String("machine_id", machineId),
+			slog.String("error", err.Error()))
+
+		if err = utils.RespondWith400(w, "failed get machine by id"); err != nil {
+			slog.Error("failed to respond with 400", slog.String("error", err.Error()))
 
 		}
 		return
 	}
 
 	if err = utils.RespondWithJSON(w, 200, machine); err != nil {
-		slog.Error("failed to respond with json with machine",
-			slog.String("machine_id", machineId),
-			slog.String("error", err.Error()),
-		)
-		if err = utils.RespondWith500(w); err != nil {
-			slog.Error("failed to respond with 500",
-				slog.String("path", r.URL.Path),
-				slog.String("method", r.Method),
-				slog.String("error", err.Error()),
-			)
+		slog.Error("failed to respond with json with machine", op, slog.String("machine_id", machineId),
+			slog.String("error", err.Error()))
+
+		if err = utils.RespondWith400(w, "failed respond with JSON"); err != nil {
+			slog.Error("failed to respond with 400", slog.String("error", err.Error()))
+
 		}
 	}
 }

@@ -30,7 +30,6 @@ func (a *App) Run() error {
 		panic(errors.Wrap(err, "failed to connect to postgres db"))
 	}
 	slog.Info("successfully connect to database")
-
 	handler := handler.New(db, a.cfg).MakeHTTPHandler()
 	slog.Info("successfully initialize http handlers")
 
