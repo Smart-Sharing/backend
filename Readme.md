@@ -2,7 +2,7 @@
 
 # Build application
 ```
-docker network create netw
+sudo docker network create custom_netw
 docker compose up
 ```
 
