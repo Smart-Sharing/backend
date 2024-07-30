@@ -38,7 +38,7 @@ func sendMachineCurrentState(machine *entities.Machine, timeout time.Duration) e
 	return nil
 }
 
-func canUnlockMachine(svc *service.Service, user *entities.User, machine *entities.Machine) error {
+func canUnlockMachine(svc *service.Service, user *entities.User, _ *entities.Machine) error {
 	switch user.JobPosition {
 	case entities.Worker:
 		userSessions, err := svc.GetActiveSessionsByUserID(user.Id)
@@ -61,8 +61,7 @@ func canUnlockMachine(svc *service.Service, user *entities.User, machine *entiti
 }
 
 func canLockMachine(svc *service.Service, user *entities.User, machine *entities.Machine) (*entities.Session, error) {
-	switch user.JobPosition {
-	case entities.Worker:
+	if user.JobPosition == entities.Worker {
 		sessions, err := svc.GetActiveSessionsByMachineAndUser(machine.Id, user.Id)
 		if err != nil {
 			return nil, errors.Wrap(err, "get sessions by machine.Id and user.Id")
@@ -77,8 +76,9 @@ func canLockMachine(svc *service.Service, user *entities.User, machine *entities
 		}
 
 		return &sessions[0], nil
+	}
 
-	case entities.Admin:
+	if user.JobPosition == entities.Admin {
 		sessions, err := svc.GetActiveSessionsByMachineID(machine.Id)
 		if err != nil {
 			return nil, errors.Wrap(err, "get active sessions by machine.Id")
@@ -90,9 +90,8 @@ func canLockMachine(svc *service.Service, user *entities.User, machine *entities
 			return nil, errors.New("there several active sessions with machine")
 		}
 		return &sessions[0], nil
-
-	default:
-		return nil, errors.New("user has uknown job position")
-
 	}
+
+	return nil, errors.New("user has uknown job position")
+
 }
