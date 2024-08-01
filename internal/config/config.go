@@ -23,11 +23,12 @@ type AppConfig struct {
 }
 
 type PostgresConfig struct {
-	Addr     string `yaml:"addr"`
-	Port     uint16 `yaml:"port"`
-	User     string `yaml:"user"`
-	Password string `yaml:"password"`
-	DB       string `yaml:"db"`
+	Addr           string        `yaml:"addr"`
+	Port           uint16        `yaml:"port"`
+	User           string        `yaml:"user"`
+	Password       string        `yaml:"password"`
+	DB             string        `yaml:"db"`
+	ConnTimeExceed time.Duration `yaml:"conn_time_exceed"`
 }
 
 type MicrocontrollerConfig struct {
