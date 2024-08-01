@@ -36,15 +36,3 @@ CREATE TABLE IF NOT EXISTS sessions(
   FOREIGN KEY (machine_id) REFERENCES machines (id) ON DELETE CASCADE,
   FOREIGN KEY (worker_id) REFERENCES users (id) ON DELETE CASCADE
 );
-
--- CREATE TEST DATA into database
-INSERT INTO users(name, phone_number, job_position, password) 
-  VALUES ('USER1', '89099769897', 'worker', '12345678'), 
-         ('SUPER-USER', '89090001122', 'admin', 'some-password123'),
-         ('Oleg Boss', '88889997766', 'admin', 'boss-password321');
-
-INSERT INTO machines(id, state, ip_addr) 
-VALUES ('1FGH345', 0, '0.0.0.0:8000'), 
-       ('1ASD987', 0, '0.0.0.0:8000'),
-       ('1TREW89', 0, 'localhost:8000');
-

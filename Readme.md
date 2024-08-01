@@ -96,3 +96,8 @@ Response:
 
 state: 0 | 1 
 If machine was turned off in session-process then after machine register session will be restore.
+
+# Добавление пользователей в базу данных
+Изначально в базе данных нету информации. В веб клиенте не предусмотрена возможность добавления новых пользователей в систему.
+
+Полная инструкция по добавлению пользоваеля доступна здесь [docs/add_user.md](./docs/add_user.md)
