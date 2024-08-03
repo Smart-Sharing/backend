@@ -1,5 +1,6 @@
 token_ttl: 48h
 secret: "<your-secret>"
+
 app:
   port: 8080
   addr: "0.0.0.0"
@@ -10,6 +11,12 @@ postgres:
   password: "postgres"
   db: "sharing_machines"
   conn_time_exceed: 3s # time duration to try connect to db
+
 # settings for microcontroller (arduino)
 mc:
   request_timeout: 1s
+
+log:
+  out_dir: "./logs"
+  dev: "./dev_logs.log"
+  csv: "./sessions.csv" 
