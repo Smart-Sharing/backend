@@ -13,3 +13,8 @@ postgres:
 # settings for microcontroller (arduino)
 mc:
   request_timeout: 1s
+
+log:
+  out_dir: "logs"
+  dev: "dev_logs.log"
+  csv: "sessions.csv" 

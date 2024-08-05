@@ -15,6 +15,7 @@ type Config struct {
 	App      AppConfig
 	Postgres PostgresConfig
 	MC       MicrocontrollerConfig
+	Log      LogConfig
 }
 
 type AppConfig struct {
@@ -33,6 +34,12 @@ type PostgresConfig struct {
 
 type MicrocontrollerConfig struct {
 	RequestTimeout time.Duration `yaml:"request_timeout" env-required:"true"`
+}
+
+type LogConfig struct {
+	OutDir string `yaml:"out_dir"`
+	Dev    string `yaml:"dev"`
+	CSV    string `yaml:"csv"`
 }
 
 // Function will panic if can not read config file or environment variables

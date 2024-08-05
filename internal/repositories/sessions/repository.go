@@ -1,6 +1,8 @@
 package sessions
 
 import (
+	"time"
+
 	"github.com/ecol-master/sharing-wh-machines/internal/entities"
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
@@ -84,18 +86,24 @@ func (r *repository) GetActiveSessionsByMachineAndUser(machineId string, userId 
 }
 
 func (r *repository) UpdateSessionState(sessionId int, state entities.SessionState) (*entities.Session, error) {
-	var (
-		id      int
-		session entities.Session
-	)
+	var id int
+
 	q := `UPDATE sessions SET state = $1 WHERE id = $2 RETURNING id;`
 	if err := r.db.QueryRowx(q, state, sessionId).Scan(&id); err != nil {
 		return nil, errors.Wrap(err, "update session")
 	}
-	q = `SELECT * FROM sessions WHERE id = $1`
-	if err := r.db.Get(&session, q, sessionId); err != nil {
-		return nil, errors.Wrap(err, "select updated session")
+
+	return r.GetSessionByID(id)
+}
+
+func (r *repository) StopSession(sessionId int) (*entities.Session, error) {
+	var id int
+	currentTime := time.Now()
+
+	q := `UPDATE sessions SET state = $1, datetime_finish = $2 WHERE id = $3 RETURNING id;`
+	if err := r.db.QueryRowx(q, entities.SessionStopped, currentTime, sessionId).Scan(&id); err != nil {
+		return nil, errors.Wrap(err, "update session")
 	}
 
-	return &session, nil
+	return r.GetSessionByID(id)
 }

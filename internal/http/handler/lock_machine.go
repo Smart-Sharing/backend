@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/ecol-master/sharing-wh-machines/internal/entities"
+	"github.com/ecol-master/sharing-wh-machines/internal/libs/csv"
 	"github.com/ecol-master/sharing-wh-machines/internal/utils"
 )
 
@@ -116,7 +117,7 @@ func (h *Handler) LockMachine(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// TODO: завершить сессию
-	session, err = h.service.UpdateSessionState(session.Id, entities.SessionStopped)
+	session, err = h.service.StopSession(session.Id)
 	if err != nil {
 		// TODO:
 		slog.Error("failed to update session state UnlockMachine",
@@ -140,6 +141,14 @@ func (h *Handler) LockMachine(w http.ResponseWriter, r *http.Request) {
 
 	// TODO: ответить, что добавление сессии прошло успешно
 	slog.Info("session was successfully stopped", slog.Int("session_id", session.Id))
+
+	// log to csv file information about ending of the session
+	csv.Write(csv.CsvData{
+		UserId:          userId,
+		UserName:        user.Name,
+		SessionStart:    session.DatetimeStart,
+		SessionDuration: session.DatetimeFinish.Sub(session.DatetimeStart),
+	})
 
 	payload := struct {
 		Msg string `json:"msg"`
