@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/ecol-master/sharing-wh-machines/internal/entities"
-	"github.com/ecol-master/sharing-wh-machines/internal/jwt"
+	"github.com/ecol-master/sharing-wh-machines/internal/libs/jwt"
 	"github.com/ecol-master/sharing-wh-machines/internal/utils"
 )
 

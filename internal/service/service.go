@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/ecol-master/sharing-wh-machines/internal/entities"
-	"github.com/ecol-master/sharing-wh-machines/internal/jwt"
+	"github.com/ecol-master/sharing-wh-machines/internal/libs/jwt"
 	"github.com/ecol-master/sharing-wh-machines/internal/repositories/machines"
 	"github.com/ecol-master/sharing-wh-machines/internal/repositories/sessions"
 	"github.com/ecol-master/sharing-wh-machines/internal/repositories/users"
@@ -33,6 +33,8 @@ type Session interface {
 	GetActiveSessionsByUserID(userId int) ([]entities.Session, error)
 	GetActiveSessionsByMachineAndUser(machineId string, userId int) ([]entities.Session, error)
 	UpdateSessionState(sessionId int, state entities.SessionState) (*entities.Session, error)
+
+	StopSession(sessionId int) (*entities.Session, error)
 }
 
 type Auth interface {
