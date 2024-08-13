@@ -46,7 +46,7 @@ func (h *Handler) MakeHTTPHandler() http.Handler {
 	mux.Handle("POST /register_machine", http.HandlerFunc(h.RegisterMachine))
 
 	// logging all request with LoggingMiddleware
-	return middlewares.LoggingMiddleware(mux)
+	return middlewares.CorsEnableMiddleware(middlewares.LoggingMiddleware(mux))
 }
 
 // function making handler from RoleBasedAccess middleware with entities.Admin role
