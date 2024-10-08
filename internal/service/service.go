@@ -29,12 +29,21 @@ type Session interface {
 	InsertSession(workerId int, machineId string) (*entities.Session, error)
 	GetSessionByID(sessionId int) (*entities.Session, error)
 	GetAllSessions() ([]entities.Session, error)
+
 	GetActiveSessionsByMachineID(machineId string) ([]entities.Session, error)
+	GetPausedSessionsByMachineID(machineId string) ([]entities.Session, error)
+
 	GetActiveSessionsByUserID(userId int) ([]entities.Session, error)
+	GetPauseSessionsByUserID(userId int) ([]entities.Session, error)
+	GetUnfinishedSessionsByUserId(userId int) ([]entities.Session, error)
+
 	GetActiveSessionsByMachineAndUser(machineId string, userId int) ([]entities.Session, error)
+	GetPausedSessionsByMachineAndUser(machineId string, userId int) ([]entities.Session, error)
+
 	UpdateSessionState(sessionId int, state entities.SessionState) (*entities.Session, error)
 
-	StopSession(sessionId int) (*entities.Session, error)
+	PauseSession(sessionId int) (*entities.Session, error)
+	FinishSession(sessionId int) (*entities.Session, error)
 }
 
 type Auth interface {

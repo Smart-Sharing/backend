@@ -3,7 +3,8 @@ package entities
 type MachineState = int
 
 const MachineFree = MachineState(0)
-const MachineInUse = MachineState(1)
+const MachineStop = MachineState(1)
+const MachineInUse = MachineState(2)
 
 type Machine struct {
 	Id      string       `db:"id" json:"id"`

@@ -41,6 +41,19 @@ func (h *Handler) LockMachine(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if machine.State != entities.MachineInUse {
+		if err = utils.RespondWith400(w, "machine is not in use at the moment"); err != nil {
+			if err = utils.RespondWith500(w); err != nil {
+				slog.Error("failed to respond with 500 during machine is not in use",
+					slog.String("machine_id", data.MachineId),
+					slog.String("path", r.URL.Path),
+					slog.String("method", r.Method),
+					slog.String("error", err.Error()),
+				)
+			}
+			return
+		}
+	}
 	userId, ok := r.Context().Value("user_id").(int64)
 	if !ok {
 		slog.Error("get `user_id` from r.Context", op, slog.Any("context", r.Context()))
@@ -52,7 +65,6 @@ func (h *Handler) LockMachine(w http.ResponseWriter, r *http.Request) {
 				slog.String("error", err.Error()),
 			)
 		}
-
 		return
 	}
 
@@ -107,9 +119,8 @@ func (h *Handler) LockMachine(w http.ResponseWriter, r *http.Request) {
 				slog.String("error", err.Error()),
 			)
 		}
-
-		return
 	}
+
 	// TODO: Отправить данные на машину, для обработки
 	if err := sendMachineCurrentState(machine, h.cfg.MC.RequestTimeout); err != nil {
 		slog.Error("send machine new state", slog.String("machine_id", machine.Id),
@@ -117,7 +128,7 @@ func (h *Handler) LockMachine(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// TODO: завершить сессию
-	session, err = h.service.StopSession(session.Id)
+	session, err = h.service.FinishSession(session.Id)
 	if err != nil {
 		// TODO:
 		slog.Error("failed to update session state UnlockMachine",
@@ -129,7 +140,7 @@ func (h *Handler) LockMachine(w http.ResponseWriter, r *http.Request) {
 		if err = utils.RespondWith500(w); err != nil {
 			slog.Error("failed to respond 500 on failed session machine state UnlockMachine",
 				slog.Int("session_id", session.Id),
-				slog.Int("new_state", entities.SessionStopped),
+				slog.Int("new_state", entities.SessionFinished),
 				slog.String("path", r.URL.Path),
 				slog.String("method", r.Method),
 				slog.String("error", err.Error()),
@@ -163,4 +174,5 @@ func (h *Handler) LockMachine(w http.ResponseWriter, r *http.Request) {
 			slog.String("error", err.Error()),
 		)
 	}
+
 }

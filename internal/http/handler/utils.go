@@ -41,13 +41,13 @@ func sendMachineCurrentState(machine *entities.Machine, timeout time.Duration) e
 func canUnlockMachine(svc *service.Service, user *entities.User, _ *entities.Machine) error {
 	switch user.JobPosition {
 	case entities.Worker:
-		userSessions, err := svc.GetActiveSessionsByUserID(user.Id)
+		unfinishedSessions, err := svc.GetUnfinishedSessionsByUserId(user.Id)
 		if err != nil {
 			return errors.Wrap(err, "get active sessions by userId")
 		}
 
-		if len(userSessions) > 0 {
-			msg := fmt.Sprintf("user has several active sessions, cnt=%d", len(userSessions))
+		if len(unfinishedSessions) != 0 {
+			msg := fmt.Sprintf("user have active sessions, cnt=%d", len(unfinishedSessions))
 			return errors.Wrap(err, msg)
 		}
 		return nil
@@ -58,6 +58,78 @@ func canUnlockMachine(svc *service.Service, user *entities.User, _ *entities.Mac
 	default:
 		return errors.New("user has uknown job position")
 	}
+}
+
+func canStopMachine(svc *service.Service, user *entities.User, machine *entities.Machine) (*entities.Session, error) {
+	if user.JobPosition == entities.Worker {
+		sessions, err := svc.GetActiveSessionsByMachineAndUser(machine.Id, user.Id)
+		if err != nil {
+			return nil, errors.Wrap(err, "get sessions by machine and user")
+		}
+
+		if len(sessions) == 0 {
+			return nil, errors.Wrap(err, "there is no active sessions")
+		}
+
+		if len(sessions) > 1 {
+			return nil, errors.Wrap(err, "there are several sessions with machine and user")
+		}
+		return &sessions[0], nil
+	}
+
+	if user.JobPosition == entities.Admin {
+		sessions, err := svc.GetActiveSessionsByMachineID(machine.Id)
+		if err != nil {
+			return nil, errors.Wrap(err, "get sessions by machine")
+		}
+
+		if len(sessions) == 0 {
+			return nil, errors.Wrap(err, "there is no sessions with machine")
+		}
+
+		if len(sessions) > 1 {
+			return nil, errors.Wrap(err, "machine has several active sessions")
+		}
+		return &sessions[0], nil
+	}
+
+	return nil, errors.New("unknown user's job")
+}
+
+func canUnstopMachine(svc *service.Service, user *entities.User, machine *entities.Machine) (*entities.Session, error) {
+	if user.JobPosition == entities.Worker {
+		pausedSessions, err := svc.GetPausedSessionsByMachineAndUser(machine.Id, user.Id)
+		if err != nil {
+			return nil, errors.Wrap(err, "get paused sessions by machine and user")
+		}
+
+		if len(pausedSessions) == 0 {
+			return nil, errors.New("there is no paused session")
+		}
+
+		if len(pausedSessions) > 1 {
+			return nil, errors.New("there are several paused sessions with machine and user")
+		}
+		return &pausedSessions[0], nil
+	}
+
+	if user.JobPosition == entities.Admin {
+		pausedSessions, err := svc.GetPausedSessionsByMachineID(machine.Id)
+		if err != nil {
+			return nil, errors.Wrap(err, "get paused sessions by machine.Id")
+		}
+
+		if len(pausedSessions) == 0 {
+			return nil, errors.New("there is no paused sessions with machine.Id")
+		}
+
+		if len(pausedSessions) > 1 {
+			return nil, errors.New("there are several paused sessions with machine.Id")
+		}
+		return &pausedSessions[0], nil
+	}
+
+	return nil, errors.New("user has unknown job position")
 }
 
 func canLockMachine(svc *service.Service, user *entities.User, machine *entities.Machine) (*entities.Session, error) {
@@ -79,17 +151,18 @@ func canLockMachine(svc *service.Service, user *entities.User, machine *entities
 	}
 
 	if user.JobPosition == entities.Admin {
-		sessions, err := svc.GetActiveSessionsByMachineID(machine.Id)
+		activeSessions, err := svc.GetActiveSessionsByMachineID(machine.Id)
 		if err != nil {
 			return nil, errors.Wrap(err, "get active sessions by machine.Id")
 		}
-		if len(sessions) == 0 {
+		if len(activeSessions) == 0 {
 			return nil, errors.New("there is no active sessions with machine")
 		}
-		if len(sessions) > 1 {
+		if len(activeSessions) > 1 {
 			return nil, errors.New("there several active sessions with machine")
 		}
-		return &sessions[0], nil
+
+		return &activeSessions[0], nil
 	}
 
 	return nil, errors.New("user has uknown job position")

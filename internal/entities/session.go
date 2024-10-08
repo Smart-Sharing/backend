@@ -5,9 +5,9 @@ import "time"
 type SessionState = int
 
 const (
-	SessionActive  = SessionState(0)
-	SessionPause   = SessionState(1)
-	SessionStopped = SessionState(2)
+	SessionActive   = SessionState(0)
+	SessionPause    = SessionState(1)
+	SessionFinished = SessionState(2)
 )
 
 type Session struct {

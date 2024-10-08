@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS machines(
   voltage integer DEFAULT 0,
   ip_addr varchar(16) NOT NULL,
 		
-	CHECK (state IN (0, 1)),
+	CHECK (state IN (0, 1, 2)),
   CHECK (voltage >= 0),
 	PRIMARY KEY (id)
 );

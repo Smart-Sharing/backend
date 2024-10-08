@@ -8,15 +8,14 @@ import (
 	"github.com/ecol-master/sharing-wh-machines/internal/utils"
 )
 
-func (h *Handler) UnlockMachine(w http.ResponseWriter, r *http.Request) {
-	op := slog.String("op", "handler.UnlockMachine")
+func (h *Handler) StopMachine(w http.ResponseWriter, r *http.Request) {
+	op := slog.String("op", "handler.StopMachine")
 
 	var respData struct {
 		MachineId string `json:"machine_id"`
 	}
 
-	err := utils.ParseRequestData(r.Body, &respData)
-	if err != nil {
+	if err := utils.ParseRequestData(r.Body, &respData); err != nil {
 		slog.Error("failed parse request data", op, slog.String("error", err.Error()))
 
 		if err := utils.RespondWith500(w); err != nil {
@@ -44,10 +43,11 @@ func (h *Handler) UnlockMachine(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-	if machine.State != entities.MachineFree {
-		if err = utils.RespondWith400(w, "machine is not free at the moment"); err != nil {
+
+	if machine.State != entities.MachineInUse {
+		if err = utils.RespondWith400(w, "machine is not in use at the moment"); err != nil {
 			if err = utils.RespondWith500(w); err != nil {
-				slog.Error("failed to respond with 500 during machine is not free",
+				slog.Error("failed to respond with 500 during machine is not in use",
 					slog.String("machine_id", respData.MachineId),
 					slog.String("path", r.URL.Path),
 					slog.String("method", r.Method),
@@ -70,7 +70,6 @@ func (h *Handler) UnlockMachine(w http.ResponseWriter, r *http.Request) {
 				slog.String("error", err.Error()),
 			)
 		}
-
 		return
 	}
 
@@ -89,12 +88,13 @@ func (h *Handler) UnlockMachine(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = canUnlockMachine(h.service, user, machine); err != nil {
-		slog.Error("try unlock machine", op, slog.Int("user_id", int(userId)),
+	session, err := canStopMachine(h.service, user, machine)
+	if err != nil {
+		slog.Error("try stop machine", op, slog.Int("user_id", int(userId)),
 			slog.String("machine_id", machine.Id), slog.String("error", err.Error()))
 
-		if err = utils.RespondWith400(w, "user can not unlock machine"); err != nil {
-			slog.Error("failed to respond 400 on failed get active sessions by user_id",
+		if err = utils.RespondWith400(w, "user can not stop machine"); err != nil {
+			slog.Error("failed to respond 400 on user can not stop machine",
 				slog.Int("user_id", user.Id),
 				slog.String("path", r.URL.Path),
 				slog.String("method", r.Method),
@@ -104,7 +104,7 @@ func (h *Handler) UnlockMachine(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	machine.State = entities.MachineInUse
+	machine.State = entities.MachineStop
 	if err = sendMachineCurrentState(machine, h.cfg.MC.RequestTimeout); err != nil {
 		slog.Error("failed sendMachineCurrentState", op, slog.String("error", err.Error()))
 
@@ -122,14 +122,14 @@ func (h *Handler) UnlockMachine(w http.ResponseWriter, r *http.Request) {
 	_, err = h.service.UpdateMachineState(machine.Id, machine.State)
 	if err != nil {
 		// TODO: подумать, что должно произойти, если не удалось обновить машину
-		slog.Error("failed to update machine state UnlockMachine",
+		slog.Error("failed to update machine state", op,
 			slog.Any("machine", machine),
 			slog.Int("new_state", machine.State),
 			slog.String("error", err.Error()),
 		)
 
 		if err = utils.RespondWith500(w); err != nil {
-			slog.Error("failed to respond 500 on failed update machine state UnlockMachine",
+			slog.Error("failed to respond 500 on failed update machine state", op,
 				slog.String("machine_id", machine.Id),
 				slog.Int("new_state", machine.State),
 				slog.String("path", r.URL.Path),
@@ -140,7 +140,7 @@ func (h *Handler) UnlockMachine(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	session, err := h.service.InsertSession(user.Id, machine.Id)
+	_, err = h.service.UpdateSessionState(session.Id, entities.SessionPause)
 	if err != nil {
 		slog.Error("failed to insert new session",
 			slog.Int("user_id", int(userId)),
@@ -173,4 +173,5 @@ func (h *Handler) UnlockMachine(w http.ResponseWriter, r *http.Request) {
 			)
 		}
 	}
+
 }

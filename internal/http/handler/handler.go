@@ -41,6 +41,8 @@ func (h *Handler) MakeHTTPHandler() http.Handler {
 	// Lock, Unlock, Pause handler
 	mux.Handle("POST /unlock_machine", h.makeWorkerHandler(h.UnlockMachine))
 	mux.Handle("POST /lock_machine", h.makeWorkerHandler(h.LockMachine))
+	mux.Handle("POST /stop_machine", h.makeWorkerHandler(h.StopMachine))
+	mux.Handle("POST /unstop_machine", h.makeWorkerHandler(h.UnstopMachine))
 
 	// handler to register (or make active after failed) arduino in system
 	mux.Handle("POST /register_machine", http.HandlerFunc(h.RegisterMachine))
