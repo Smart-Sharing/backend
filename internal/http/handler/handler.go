@@ -35,6 +35,14 @@ func (h *Handler) MakeHTTPHandler() http.Handler {
 	mux.Handle("GET /get_all_sessions", h.makeAdminHandler(h.GetAllSessions))
 	mux.Handle("GET /get_session", h.makeAdminHandler(h.GetSessionByID))
 
+	// New handlers for parkings
+	mux.Handle("GET /get_all_parkings", h.makeAdminHandler(h.GetAllParkings))
+	mux.Handle("GET /get_parking", h.makeAdminHandler(h.GetParkingById))
+	mux.Handle("POST /register_parking", h.makeAdminHandler(h.RegisterParking))
+	mux.Handle("PUT /update_parking_state", h.makeAdminHandler(h.UpdateParkingState))
+	mux.Handle("PUT /update_parking_capacity", h.makeAdminHandler(h.UpdateParkingCapacity))
+	mux.Handle("PUT /add_machine", h.makeAdminHandler(h.ManualyAddParkingMachine))
+
 	// auth
 	mux.HandleFunc("POST /login", h.Login)
 

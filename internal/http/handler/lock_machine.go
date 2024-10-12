@@ -25,6 +25,11 @@ func (h *Handler) LockMachine(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Get mac addr of router from machine
+	// Check if parking with this addr exists
+	// Check if parking place can handle one more machine
+	// if all answers is yes - then lock machine. Else - send error
+
 	machine, err := h.service.GetMachineByID(data.MachineId)
 	if err != nil {
 		slog.Error("get machine by id", op, slog.String("machine_id", data.MachineId),
@@ -160,6 +165,9 @@ func (h *Handler) LockMachine(w http.ResponseWriter, r *http.Request) {
 		SessionStart:    session.DatetimeStart,
 		SessionDuration: session.DatetimeFinish.Sub(session.DatetimeStart),
 	})
+
+	// Update machines parking place (set parking_id in database table)
+	// Update parking place (add machine to it)
 
 	payload := struct {
 		Msg string `json:"msg"`

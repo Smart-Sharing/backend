@@ -3,7 +3,7 @@ version: "3.3"
 services:
   postgres:
     container_name: storage
-    image: postgres:13.3
+    image: postgres:latest
     restart: unless-stopped
     volumes:
       - pgdata:/var/lib/postgresql/data
@@ -18,13 +18,12 @@ services:
     networks:
       - netw
 
-  #
-  app:
+  backend:
     build:
       context: .
       dockerfile: ./docker/app.Dockerfile
-    container_name: app
-    hostname: app
+    container_name: backend
+    hostname: backend
     platform: linux/x86_64
     restart: unless-stopped
     ports:
@@ -35,8 +34,6 @@ services:
 networks:
   netw:
     name: custom_netw
-    driver: bridge
-    external: true
 
 volumes:
   pgdata:

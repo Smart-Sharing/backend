@@ -159,6 +159,9 @@ func (h *Handler) UnlockMachine(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Update machines parking place (set parking_id in database table to 0)
+	// Update parking place (remove machine from it)
+
 	payload := struct {
 		SessionId int `json:"sessionId"`
 	}{SessionId: session.Id}

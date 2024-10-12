@@ -1,6 +1,19 @@
+CREATE TABLE IF NOT EXISTS parkings(
+  id SERIAL,
+  name text NOT NULL UNIQUE,
+  mac_addr varchar(20) NOT NULL,
+  machines integer DEFAULT 0,
+  capacity integer DEFAULT 0,
+  state integer DEFAULT 1,
+
+  CHECK (state IN (0, 1)),
+  PRIMARY KEY (id)
+);
+
 CREATE TABLE IF NOT EXISTS machines(
 	id varchar(16) NOT NULL,
 	state integer DEFAULT 0,
+  parking_id integer DEFAULT 0,
   voltage integer DEFAULT 0,
   ip_addr varchar(16) NOT NULL,
 		

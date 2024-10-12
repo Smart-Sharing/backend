@@ -17,7 +17,7 @@ func (h *Handler) RegisterMachine(w http.ResponseWriter, r *http.Request) {
 	if err := utils.ParseRequestData(r.Body, &data); err != nil {
 		slog.Error("parse req data", op, slog.String("error", err.Error()))
 		if err := utils.RespondWith400(w, "failed to parse request data"); err != nil {
-			slog.Error("failed to respond with 400", op, err.Error())
+			slog.Error("failed to respond with 400", op, slog.String("error", err.Error()))
 		}
 		return
 	}

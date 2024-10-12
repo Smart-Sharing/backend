@@ -76,3 +76,17 @@ func (r *repository) UpdateMachineState(machineId string, state entities.Machine
 	}
 	return &machine, nil
 }
+
+// New method to update machines parking place (parkingId)
+func (r *repository) UpdateMachineParkingId(machineId string, parkingId int) (*entities.Machine, error) {
+	var machine entities.Machine
+
+	q := `
+		UPDATE machines SET parking_id = $1 WHERE id = $2
+		RETURNING *;
+	`
+	if err := r.db.QueryRowx(q, parkingId, machineId).StructScan(&machine); err != nil {
+		return nil, errors.Wrap(err, "failed to update machine's parking_id")
+	}
+	return &machine, nil
+}
