@@ -25,11 +25,6 @@ func (h *Handler) LockMachine(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get mac addr of router from machine
-	// Check if parking with this addr exists
-	// Check if parking place can handle one more machine
-	// if all answers is yes - then lock machine. Else - send error
-
 	machine, err := h.service.GetMachineByID(data.MachineId)
 	if err != nil {
 		slog.Error("get machine by id", op, slog.String("machine_id", data.MachineId),
@@ -38,6 +33,51 @@ func (h *Handler) LockMachine(w http.ResponseWriter, r *http.Request) {
 		if err = utils.RespondWith500(w); err != nil {
 			slog.Error("failed to respond 500 on failed to get machine by id",
 				slog.String("data_machine_id", data.MachineId),
+				slog.String("path", r.URL.Path),
+				slog.String("method", r.Method),
+				slog.String("error", err.Error()),
+			)
+		}
+		return
+	}
+
+	// Получаем mac адрес от машинки
+	currentMac, err := getMachineCurrentMacAddr(machine, h.cfg.MC.RequestTimeout)
+	if err != nil {
+		slog.Error("failed getMachineCurrentMacAddr", op, slog.String("error", err.Error()))
+
+		if err = utils.RespondWith400(w, "can't get machine mac addr at the moment"); err != nil {
+			slog.Error("failed to respond with 400 on getMachineCurrentMacAddr",
+				slog.Any("machine", machine),
+				slog.String("path", r.URL.Path),
+				slog.String("method", r.Method),
+				slog.String("error", err.Error()),
+			)
+		}
+		return
+	}
+
+	// Проверяем, что парковка с таким мак-адресом существует
+	parking, err := h.service.GetParkingByMacAddr(currentMac)
+	if err != nil {
+		slog.Error("failed GetParkingByMacAddr", op, slog.String("error", err.Error()))
+
+		if err = utils.RespondWith400(w, "can't get parking by macaddr. Parking not exists"); err != nil {
+			slog.Error("failed to respond with 400 on GetParkingByMacAddr",
+				slog.Any("machine", machine),
+				slog.String("path", r.URL.Path),
+				slog.String("method", r.Method),
+				slog.String("error", err.Error()),
+			)
+		}
+		return
+	}
+
+	// Проверяем, что парковка может принять ещё одну машинку
+	if int(parking.Capacity) <= parking.Machines && parking.Capacity != 0 {
+		if err = utils.RespondWith400(w, "error while adding machine to parking. Parking machines is more or equals than capacity"); err != nil {
+			slog.Error("failed to respond 400 on failed adding machine to parking",
+				slog.Int("parking_id", parking.Id),
 				slog.String("path", r.URL.Path),
 				slog.String("method", r.Method),
 				slog.String("error", err.Error()),
@@ -56,9 +96,10 @@ func (h *Handler) LockMachine(w http.ResponseWriter, r *http.Request) {
 					slog.String("error", err.Error()),
 				)
 			}
-			return
 		}
+		return
 	}
+
 	userId, ok := r.Context().Value("user_id").(int64)
 	if !ok {
 		slog.Error("get `user_id` from r.Context", op, slog.Any("context", r.Context()))
@@ -124,12 +165,14 @@ func (h *Handler) LockMachine(w http.ResponseWriter, r *http.Request) {
 				slog.String("error", err.Error()),
 			)
 		}
+		return
 	}
 
 	// TODO: Отправить данные на машину, для обработки
 	if err := sendMachineCurrentState(machine, h.cfg.MC.RequestTimeout); err != nil {
 		slog.Error("send machine new state", slog.String("machine_id", machine.Id),
 			slog.Int("new_state", machine.State), slog.String("error", err.Error()))
+		return
 	}
 
 	// TODO: завершить сессию
@@ -166,8 +209,41 @@ func (h *Handler) LockMachine(w http.ResponseWriter, r *http.Request) {
 		SessionDuration: session.DatetimeFinish.Sub(session.DatetimeStart),
 	})
 
-	// Update machines parking place (set parking_id in database table)
-	// Update parking place (add machine to it)
+	// Если всё хорошо - добавляем машинку на парковку
+	_, err = h.service.UpdateParkingMachines(parking.Machines+1, parking.Id)
+	if err != nil {
+		slog.Error("parking with such id doesn't exists", slog.Int("parking_id", parking.Id))
+		if err = utils.RespondWith400(w, "parking with such id doesn't exists"); err != nil {
+			if err = utils.RespondWith500(w); err != nil {
+				slog.Error("failed to respond with 500 during parking with such id doesn't exists",
+					slog.Int("parking_id", machine.ParkingId),
+					slog.String("path", r.URL.Path),
+					slog.String("method", r.Method),
+					slog.String("error", err.Error()),
+				)
+			}
+		}
+		return
+	}
+
+	// И обновляем id парковки у машинки
+	_, err = h.service.UpdateMachineParkingId(machine.Id, parking.Id)
+	if err != nil {
+		slog.Error("failed to update machine parkingId lockMachine",
+			slog.Any("machine", machine),
+			slog.String("error", err.Error()),
+		)
+
+		if err = utils.RespondWith500(w); err != nil {
+			slog.Error("failed to respond 500 on failed update machine parkingId lockMachine",
+				slog.String("machine_id", machine.Id),
+				slog.String("path", r.URL.Path),
+				slog.String("method", r.Method),
+				slog.String("error", err.Error()),
+			)
+		}
+		return
+	}
 
 	payload := struct {
 		Msg string `json:"msg"`

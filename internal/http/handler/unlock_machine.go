@@ -159,8 +159,57 @@ func (h *Handler) UnlockMachine(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Update machines parking place (set parking_id in database table to 0)
-	// Update parking place (remove machine from it)
+	if machine.ParkingId != 0 {
+		parking, err := h.service.GetParkingById(machine.ParkingId)
+		if err != nil {
+			slog.Error("parking with such id doesn't exists", slog.Int("parking_id", machine.ParkingId))
+			if err = utils.RespondWith400(w, "parking with such id doesn't exists"); err != nil {
+				if err = utils.RespondWith500(w); err != nil {
+					slog.Error("failed to respond with 500 during parking with such id doesn't exists",
+						slog.Int("parking_id", machine.ParkingId),
+						slog.String("path", r.URL.Path),
+						slog.String("method", r.Method),
+						slog.String("error", err.Error()),
+					)
+				}
+			}
+			return
+		}
+
+		_, err = h.service.UpdateParkingMachines(parking.Machines-1, parking.Id)
+		if err != nil {
+			slog.Error("parking with such id doesn't exists", slog.Int("parking_id", parking.Id))
+			if err = utils.RespondWith400(w, "parking with such id doesn't exists"); err != nil {
+				if err = utils.RespondWith500(w); err != nil {
+					slog.Error("failed to respond with 500 during parking with such id doesn't exists",
+						slog.Int("parking_id", machine.ParkingId),
+						slog.String("path", r.URL.Path),
+						slog.String("method", r.Method),
+						slog.String("error", err.Error()),
+					)
+				}
+			}
+			return
+		}
+
+		_, err = h.service.UpdateMachineParkingId(machine.Id, 0)
+		if err != nil {
+			slog.Error("failed to update machine parkingId UnlockMachine",
+				slog.Any("machine", machine),
+				slog.String("error", err.Error()),
+			)
+
+			if err = utils.RespondWith500(w); err != nil {
+				slog.Error("failed to respond 500 on failed update machine parkingId UnlockMachine",
+					slog.String("machine_id", machine.Id),
+					slog.String("path", r.URL.Path),
+					slog.String("method", r.Method),
+					slog.String("error", err.Error()),
+				)
+			}
+			return
+		}
+	}
 
 	payload := struct {
 		SessionId int `json:"sessionId"`

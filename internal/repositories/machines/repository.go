@@ -90,3 +90,14 @@ func (r *repository) UpdateMachineParkingId(machineId string, parkingId int) (*e
 	}
 	return &machine, nil
 }
+
+// New method to select machines for each parking
+func (r *repository) GetMachinesByParkingId(parkingId int) ([]entities.Machine, error) {
+	machines := make([]entities.Machine, 0)
+
+	q := `SELECT * FROM machines WHERE parking_id = $1`
+	if err := r.db.Select(&machines, q, parkingId); err != nil {
+		return nil, errors.Wrap(err, "get all machines")
+	}
+	return machines, nil
+}

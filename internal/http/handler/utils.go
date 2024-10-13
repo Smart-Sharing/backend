@@ -12,7 +12,14 @@ import (
 	"github.com/pkg/errors"
 )
 
+// TODO: implement this metod after finishing arduino controller
+func getMachineCurrentMacAddr(machine *entities.Machine, timeout time.Duration) (macAddr string, err error) {
+	return "123", nil
+}
+
 func sendMachineCurrentState(machine *entities.Machine, timeout time.Duration) error {
+	return nil // remove after testing
+
 	payload := []byte(fmt.Sprintf(`{"current_state": %d}`, machine.State))
 	reader := bytes.NewReader(payload)
 

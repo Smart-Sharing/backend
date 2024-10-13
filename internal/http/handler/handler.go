@@ -29,6 +29,7 @@ func (h *Handler) MakeHTTPHandler() http.Handler {
 	mux.Handle("GET /get_all_users", h.makeAdminHandler(h.GetAllUsers))
 	mux.Handle("GET /get_user", h.makeAdminHandler(h.GetUserByID))
 
+	mux.Handle("GET /get_parking_machines", h.makeAdminHandler(h.GetMachinesByParkingName))
 	mux.Handle("GET /get_all_machines", h.makeAdminHandler(h.GetAllMachines))
 	mux.Handle("GET /get_machine", h.makeAdminHandler(h.GetMachineByID))
 

@@ -7,6 +7,39 @@ import (
 	"github.com/ecol-master/sharing-wh-machines/internal/utils"
 )
 
+func (h *Handler) GetMachinesByParkingName(w http.ResponseWriter, r *http.Request) {
+	op := slog.String("op", "handler.GetMachinesByParkingId")
+
+	name := r.URL.Query().Get("name")
+	parking, err := h.service.GetParkingByName(name)
+	if err != nil {
+		slog.Error("parking not found", slog.String("parking_name", name))
+		if err := utils.RespondWith400(w, "parking not found. Missing or invalid query field name"); err != nil {
+			slog.Error(
+				"failed respond 400",
+				slog.String("path", r.URL.Path),
+				slog.String("method", r.Method),
+				slog.String("error", err.Error()),
+			)
+		}
+		return
+	}
+
+	machines, err := h.service.GetMachinesByParkingId(parking.Id)
+	if err != nil {
+		slog.Error("get machines by parking_id", op, slog.String("error", err.Error()))
+
+		if err := utils.RespondWith400(w, "failed to get machines by parking_id"); err != nil {
+			slog.Error("failed respond with 400", op, slog.String("error", err.Error()))
+		}
+		return
+	}
+
+	if err := utils.RespondWithJSON(w, 200, machines); err != nil {
+		slog.Error("failed respond with JSON", op, slog.String("error", err.Error()))
+	}
+}
+
 func (h *Handler) GetAllMachines(w http.ResponseWriter, r *http.Request) {
 	op := slog.String("op", "handler.GetAllMachines")
 

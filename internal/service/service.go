@@ -21,11 +21,12 @@ type User interface {
 type Parking interface {
 	InsertParking(name, mac string, capacity entities.Capacity, state entities.ParkingState) (*entities.Parking, error)
 	GetParkingById(parkingId int) (*entities.Parking, error)
+	GetParkingByName(name string) (*entities.Parking, error)
+	GetAllParkings() ([]entities.Parking, error)
 
 	// Method for checking if machine in some parking zone
 	GetParkingByMacAddr(macAddr string) (*entities.Parking, error)
 
-	GetAllParkings() ([]entities.Parking, error)
 	UpdateParkingState(state entities.ParkingState, parkingId int) (*entities.Parking, error)
 	UpdateParkingCapacity(capacity entities.Capacity, parkingId int) (*entities.Parking, error)
 
@@ -42,6 +43,9 @@ type Machine interface {
 
 	// New method for adding parking_id to database table
 	UpdateMachineParkingId(machineId string, parkingId int) (*entities.Machine, error)
+
+	// New method for get machines for each parking
+	GetMachinesByParkingId(parkingId int) ([]entities.Machine, error)
 }
 
 type Session interface {

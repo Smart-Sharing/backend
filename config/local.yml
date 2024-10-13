@@ -1,5 +1,5 @@
 token_ttl: 48h
-secret: "<your-secret>"
+secret: "akjsdjnvljkldjhfljakwenrjkhelrj34kn5n5kljl"
 app:
   port: 8080
   addr: "0.0.0.0"

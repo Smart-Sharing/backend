@@ -41,6 +41,17 @@ func (r *repository) GetParkingById(parkingId int) (*entities.Parking, error) {
 	return &parking, nil
 }
 
+// Get parking via Name
+func (r *repository) GetParkingByName(name string) (*entities.Parking, error) {
+	var parking entities.Parking
+
+	q := `SELECT * FROM parkings WHERE name = $1`
+	if err := r.db.Get(&parking, q, name); err != nil {
+		return nil, errors.Wrap(err, "get parking by id")
+	}
+	return &parking, nil
+}
+
 // Get parking via MacAddr
 func (r *repository) GetParkingByMacAddr(macAddr string) (*entities.Parking, error) {
 	var parking entities.Parking
