@@ -39,8 +39,8 @@ CREATE TABLE IF NOT EXISTS sessions(
   state integer DEFAULT 0,
   machine_id varchar(16) NOT NULL,
   worker_id integer NOT NULL,
-  datetime_start TIMESTAMP DEFAULT CURRENT_DATE,
-  datetime_finish TIMESTAMP DEFAULT CURRENT_DATE,
+  datetime_start bigint NOT NULL,
+  datetime_finish bigint NOT NULL,
 
   CHECK (state IN (0, 1, 2)),
 

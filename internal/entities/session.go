@@ -15,6 +15,6 @@ type Session struct {
 	State          SessionState `db:"state" json:"state"`
 	MachineId      string       `db:"machine_id" json:"machineId"`
 	WorkerId       int          `db:"worker_id" json:"workerId"`
-	DatetimeStart  time.Time    `db:"datetime_start" json:"datetimeStart"`
-	DatetimeFinish time.Time    `db:"datetime_finish" json:"datetimeFinish"`
+	DatetimeStart  time.Time    `json:"datetimeStart"`
+	DatetimeFinish time.Time    `json:"datetimeFinish"`
 }

@@ -49,7 +49,7 @@ func RoleBasedAccess(secret string, requiredJob entities.UserJob, next http.Hand
 
 		claims, err := extractClaims(token, secret)
 		if err != nil {
-			slog.Error("failed extract token claims: token is invalid", op)
+			slog.Error("failed extract token claims: token is invalid", op, slog.String("token", token), slog.String("error", err.Error()))
 			if err := utils.RespondWith400(w, err.Error()); err != nil {
 				slog.Error("failed respond with 400: parse claims", op, slog.String("error", err.Error()))
 			}
