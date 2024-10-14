@@ -1,7 +1,7 @@
 CREATE TABLE IF NOT EXISTS parkings(
   id SERIAL,
   name text NOT NULL UNIQUE,
-  mac_addr varchar(20) NOT NULL,
+  mac_addr varchar(20) NOT NULL UNIQUE,
   machines integer DEFAULT 0,
   capacity integer DEFAULT 0,
   state integer DEFAULT 1,

@@ -101,11 +101,10 @@ func (h *Handler) RegisterParking(w http.ResponseWriter, r *http.Request) {
 	name := slog.String("parkingName", data.Name)
 	mac := slog.String("machineId", data.MacAddr)
 	cap := slog.Int("machineId", int(data.Capacity))
-	state := slog.Int("machineId", int(data.State))
 
 	parking, err := h.service.InsertParking(data.Name, data.MacAddr, data.Capacity, data.State)
 	if err != nil {
-		slog.Error("failed to create new in parking. Maybe, parking with this name already exists", name, mac, cap, state, slog.String("error", err.Error()))
+		slog.Error("failed to create new in parking. Maybe, parking with this name already exists", name, mac, cap, slog.String("error", err.Error()))
 		if err = utils.RespondWith400(w, "failed to create new in parking. Maybe, parking with this name already exists"); err != nil {
 			slog.Error("failed to respond with 400", op, slog.String("error", err.Error()))
 		}
@@ -115,7 +114,7 @@ func (h *Handler) RegisterParking(w http.ResponseWriter, r *http.Request) {
 	if err = utils.SuccessRespondWith200(w, parking); err != nil {
 		if err = utils.RespondWith500(w); err != nil {
 			slog.Error("failed to respond Success(200) with paylod on RegisterMachine",
-				slog.Any("payload", parking), name, mac, cap, state,
+				slog.Any("payload", parking), name, mac, cap,
 				slog.String("method", r.Method),
 				slog.String("path", r.URL.Path),
 				slog.String("error", err.Error()),
@@ -202,7 +201,24 @@ func (h *Handler) UpdateParkingCapacity(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	parking, err := h.service.UpdateParkingCapacity(data.NewCapacity, data.ParkingId)
+	parking, err := h.service.GetParkingById(data.ParkingId)
+	if err != nil {
+		slog.Error("failed to update parking capacity", op, slog.String("error", err.Error()))
+		if err = utils.RespondWith400(w, "failed to update parking capacity. Parking with this id not exists or missing field id"); err != nil {
+			slog.Error("failed respond with 400", slog.String("error", err.Error()))
+		}
+		return
+	}
+
+	// Проверяем, что новая вместительность парковки больше, чем кол-во машинок, находящихся на данный момент там
+	if int(data.NewCapacity) <= parking.Machines && int(data.NewCapacity) != 0 {
+		if err = utils.RespondWith400(w, "failed to update parking capacity. Capacity is more than machines that now at the parking"); err != nil {
+			slog.Error("failed respond with 400", slog.String("error", err.Error()))
+		}
+		return
+	}
+
+	parking, err = h.service.UpdateParkingCapacity(data.NewCapacity, data.ParkingId)
 	if err != nil {
 		slog.Error("failed to update parking capacity",
 			slog.Int("parking_id", data.ParkingId),

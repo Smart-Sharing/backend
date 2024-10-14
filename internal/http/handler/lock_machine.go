@@ -86,6 +86,19 @@ func (h *Handler) LockMachine(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Проверяем, что парковка активна
+	if parking.State == entities.ParkingInactive {
+		if err = utils.RespondWith400(w, "error while adding machine to parking. Parking is inactive for now"); err != nil {
+			slog.Error("failed to respond 400 on failed adding machine to parking",
+				slog.Int("parking_id", parking.Id),
+				slog.String("path", r.URL.Path),
+				slog.String("method", r.Method),
+				slog.String("error", err.Error()),
+			)
+		}
+		return
+	}
+
 	if machine.State != entities.MachineInUse {
 		if err = utils.RespondWith400(w, "machine is not in use at the moment"); err != nil {
 			if err = utils.RespondWith500(w); err != nil {
