@@ -248,7 +248,7 @@ func (h *Handler) UpdateParkingCapacity(w http.ResponseWriter, r *http.Request) 
 	}
 }
 
-func (h *Handler) ManualyAddParkingMachine(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) ManualyMoveParkingMachine(w http.ResponseWriter, r *http.Request) {
 	op := slog.String("op", "handler.ManualyAddParkingMachine")
 
 	data := struct {
@@ -265,36 +265,7 @@ func (h *Handler) ManualyAddParkingMachine(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	parking, err := h.service.GetParkingById(data.ParkingId)
-	if err != nil {
-		slog.Error("failed to get parking by id",
-			slog.Int("parkingId", data.ParkingId),
-			slog.String("error", err.Error()),
-		)
-
-		if err = utils.RespondWith400(w, "error while adding machine to parking. Parking not exists or missing field parking_id"); err != nil {
-			slog.Error("failed to respond 400 on failed adding machine to parking",
-				slog.Int("parking_id", data.ParkingId),
-				slog.String("path", r.URL.Path),
-				slog.String("method", r.Method),
-				slog.String("error", err.Error()),
-			)
-		}
-		return
-	}
-
-	if int(parking.Capacity) <= parking.Machines && parking.Capacity != 0 {
-		if err = utils.RespondWith400(w, "error while adding machine to parking. Parking machines is more or equals than capacity"); err != nil {
-			slog.Error("failed to respond 400 on failed adding machine to parking",
-				slog.Int("parking_id", data.ParkingId),
-				slog.String("path", r.URL.Path),
-				slog.String("method", r.Method),
-				slog.String("error", err.Error()),
-			)
-		}
-		return
-	}
-
+	// Получаем машинку из базы
 	machine, err := h.service.GetMachineByID(data.MachineId)
 	if err != nil {
 		slog.Error("failed to get parking by id",
@@ -313,8 +284,9 @@ func (h *Handler) ManualyAddParkingMachine(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	if machine.ParkingId != 0 {
-		if err = utils.RespondWith400(w, "error while adding machine to parking. Machine already on parking"); err != nil {
+	// Проверяем, что она свободна
+	if machine.State != entities.MachineFree {
+		if err = utils.RespondWith400(w, "error while adding machine to parking. Machine for now in use"); err != nil {
 			slog.Error("failed to respond 400 on failed adding machine to parking",
 				slog.Int("parking_id", data.ParkingId),
 				slog.String("path", r.URL.Path),
@@ -325,47 +297,142 @@ func (h *Handler) ManualyAddParkingMachine(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	parking, err = h.service.UpdateParkingMachines(parking.Machines+1, parking.Id)
-	if err != nil {
-		slog.Error("failed to adding machine to parking",
-			slog.Any("parking", data),
-			slog.Int("new_machines", parking.Machines+1),
-			slog.String("error", err.Error()),
-		)
+	// Если двигаем на другую парковку
+	if data.ParkingId != 0 {
 
-		if err = utils.RespondWith400(w, "error while adding machine to parking"); err != nil {
-			slog.Error("error while adding machine to parking",
+		// Пробуем достать её из базы
+		parking, err := h.service.GetParkingById(data.ParkingId)
+		if err != nil {
+			slog.Error("failed to get parking by id",
+				slog.Int("parkingId", data.ParkingId),
+				slog.String("error", err.Error()),
+			)
+
+			if err = utils.RespondWith400(w, "error while adding machine to parking. Parking not exists or missing field parking_id"); err != nil {
+				slog.Error("failed to respond 400 on failed adding machine to parking",
+					slog.Int("parking_id", data.ParkingId),
+					slog.String("path", r.URL.Path),
+					slog.String("method", r.Method),
+					slog.String("error", err.Error()),
+				)
+			}
+			return
+		}
+
+		// Если достали, то проверяем, может ли она вместить ещё одну машинку
+		if int(parking.Capacity) <= parking.Machines && parking.Capacity != 0 {
+			if err = utils.RespondWith400(w, "error while adding machine to parking. Parking machines is more or equals than capacity"); err != nil {
+				slog.Error("failed to respond 400 on failed adding machine to parking",
+					slog.Int("parking_id", data.ParkingId),
+					slog.String("path", r.URL.Path),
+					slog.String("method", r.Method),
+					slog.String("error", err.Error()),
+				)
+			}
+			return
+		}
+
+		// Если может - проверяем, активна ли она
+		if parking.State == entities.ParkingInactive {
+			if err = utils.RespondWith400(w, "error while adding machine to parking. Parking is Inactive"); err != nil {
+				slog.Error("failed to respond 400 on failed adding machine to parking",
+					slog.Int("parking_id", data.ParkingId),
+					slog.String("path", r.URL.Path),
+					slog.String("method", r.Method),
+					slog.String("error", err.Error()),
+				)
+			}
+			return
+		}
+
+		// Если всё гуд - тогда добавляем её на парковку
+		_, err = h.service.UpdateParkingMachines(parking.Machines+1, parking.Id)
+		if err != nil {
+			slog.Error("failed to adding machine to parking",
 				slog.Any("parking", data),
 				slog.Int("new_machines", parking.Machines+1),
-				slog.String("path", r.URL.Path),
-				slog.String("method", r.Method),
 				slog.String("error", err.Error()),
 			)
+
+			if err = utils.RespondWith400(w, "error while adding machine to parking"); err != nil {
+				slog.Error("error while adding machine to parking",
+					slog.Any("parking", data),
+					slog.Int("new_machines", parking.Machines+1),
+					slog.String("path", r.URL.Path),
+					slog.String("method", r.Method),
+					slog.String("error", err.Error()),
+				)
+			}
+			return
 		}
-		return
+
+		// И, наконец, обновляем id парковки у самой машинки
+		_, err = h.service.UpdateMachineParkingId(data.MachineId, data.ParkingId)
+		if err != nil {
+			slog.Error("failed to move machine to parking",
+				slog.Int("form parking_id", machine.ParkingId),
+				slog.Int("to parking_id", data.ParkingId),
+				slog.String("error", err.Error()),
+			)
+
+			if err = utils.RespondWith400(w, "error while moving machine to parking"); err != nil {
+				slog.Error("error while adding machine to parking",
+					slog.Int("form parking_id", machine.ParkingId),
+					slog.Int("to parking_id", data.ParkingId),
+					slog.String("path", r.URL.Path),
+					slog.String("method", r.Method),
+					slog.String("error", err.Error()),
+				)
+			}
+			return
+		}
 	}
 
-	_, err = h.service.UpdateMachineParkingId(data.MachineId, data.ParkingId)
-	if err != nil {
-		slog.Error("failed to update parking_id for machine",
-			slog.String("machineId", data.MachineId),
-			slog.Int("parkingId", data.ParkingId),
-			slog.String("error", err.Error()),
-		)
+	// Если машинка была на парковке
+	if machine.ParkingId != 0 {
 
-		if err = utils.RespondWith400(w, "error while updating parking_id for machine"); err != nil {
-			slog.Error("error while updating parking_id for machine",
-				slog.String("machineId", data.MachineId),
+		// Пробуем досать парковку из базы
+		parking, err := h.service.GetParkingById(machine.ParkingId)
+		if err != nil {
+			slog.Error("failed to get parking by id",
 				slog.Int("parkingId", data.ParkingId),
-				slog.String("path", r.URL.Path),
-				slog.String("method", r.Method),
 				slog.String("error", err.Error()),
 			)
+
+			if err = utils.RespondWith400(w, "error while adding machine to parking. Parking not exists or missing field parking_id"); err != nil {
+				slog.Error("failed to respond 400 on failed adding machine to parking",
+					slog.Int("parking_id", data.ParkingId),
+					slog.String("path", r.URL.Path),
+					slog.String("method", r.Method),
+					slog.String("error", err.Error()),
+				)
+			}
+			return
 		}
-		return
+
+		// Убираем её с парковки
+		_, err = h.service.UpdateParkingMachines(parking.Machines-1, machine.ParkingId)
+		if err != nil {
+			slog.Error("failed to remove machine from parking",
+				slog.Any("parking", data),
+				slog.Int("new_machines", parking.Machines+1),
+				slog.String("error", err.Error()),
+			)
+
+			if err = utils.RespondWith400(w, "error while removing machine from parking"); err != nil {
+				slog.Error("error while adding machine to parking",
+					slog.Any("parking", data),
+					slog.Int("new_machines", parking.Machines+1),
+					slog.String("path", r.URL.Path),
+					slog.String("method", r.Method),
+					slog.String("error", err.Error()),
+				)
+			}
+			return
+		}
 	}
 
-	if err = utils.SuccessRespondWith200(w, parking); err != nil {
+	if err = utils.SuccessRespondWith200(w, machine); err != nil {
 		slog.Error("failed to respond with 200 on adding machine to parking",
 			slog.String("machine_id", data.MachineId),
 			slog.Int("parking_id", data.ParkingId),
