@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"math/rand"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/ecol-master/sharing-wh-machines/internal/entities"
@@ -174,4 +176,11 @@ func canLockMachine(svc *service.Service, user *entities.User, machine *entities
 
 	return nil, errors.New("user has uknown job position")
 
+}
+
+func newQrKey() string {
+	gen := rand.New(rand.NewSource(time.Now().Unix()))
+	n := gen.Int()
+
+	return strconv.Itoa(int(n))
 }

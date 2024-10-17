@@ -3,6 +3,7 @@ secret: "akjsdjnvljkldjhfljakwenrjkhelrj34kn5n5kljl"
 app:
   port: 8080
   addr: "0.0.0.0"
+  machine_local_addr: "192.168.113.215" # It will be used to generate a correct qr-code
 postgres:
   addr: "storage"
   port: 5432

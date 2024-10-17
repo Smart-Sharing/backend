@@ -19,8 +19,9 @@ type Config struct {
 }
 
 type AppConfig struct {
-	Port uint16 `yaml:"port"`
-	Addr string `yaml:"addr"`
+	Port        uint16 `yaml:"port"`
+	Addr        string `yaml:"addr"`
+	MachineAddr string `yaml:"machine_local_addr"`
 }
 
 type PostgresConfig struct {

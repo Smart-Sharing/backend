@@ -13,12 +13,14 @@ import (
 type Handler struct {
 	service *service.Service
 	cfg     *config.Config
+	qrKey   string
 }
 
 func New(db *sqlx.DB, cfg *config.Config) *Handler {
 	return &Handler{
 		service: service.New(db),
 		cfg:     cfg,
+		qrKey:   newQrKey(),
 	}
 }
 
@@ -46,6 +48,10 @@ func (h *Handler) MakeHTTPHandler() http.Handler {
 
 	// auth
 	mux.HandleFunc("POST /login", h.Login)
+
+	// handlers to work with qr
+	mux.Handle("GET /get_qr_key", h.makeWorkerHandler(h.GetQrKey))
+	mux.Handle("POST /finish_session", h.makeWorkerHandler(h.FinishSession))
 
 	// Lock, Unlock, Pause handler
 	mux.Handle("POST /unlock_machine", h.makeWorkerHandler(h.UnlockMachine))
