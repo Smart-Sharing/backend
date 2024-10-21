@@ -3,7 +3,9 @@ package handler
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
 	"math/rand"
 	"net/http"
 	"strconv"
@@ -14,14 +16,43 @@ import (
 	"github.com/pkg/errors"
 )
 
-// TODO: implement this metod after finishing arduino controller
 func getMachineCurrentMacAddr(machine *entities.Machine, timeout time.Duration) (macAddr string, err error) {
-	return "123", nil
+	address := fmt.Sprintf("http://%s/%s/get_mac_addr", machine.IPAddr, machine.Id)
+
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, address, nil)
+	if err != nil {
+		return "", errors.Wrap(err, "create new request")
+	}
+
+	resp, err := (&http.Client{}).Do(req)
+	if err != nil {
+		return "", errors.Wrap(err, "do request")
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	data := struct {
+		MacAddr string `json:"router_bssid"`
+	}{}
+
+	if err := json.Unmarshal(body, &data); err != nil {
+		return "", err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return "", errors.New("failed send to arduino current status")
+	}
+
+	return data.MacAddr, nil
 }
 
 func sendMachineCurrentState(machine *entities.Machine, timeout time.Duration) error {
-	return nil // remove after testing
-
 	payload := []byte(fmt.Sprintf(`{"current_state": %d}`, machine.State))
 	reader := bytes.NewReader(payload)
 
@@ -34,8 +65,8 @@ func sendMachineCurrentState(machine *entities.Machine, timeout time.Duration) e
 	if err != nil {
 		return errors.Wrap(err, "create new request")
 	}
-	resp, err := (&http.Client{}).Do(req)
 
+	resp, err := (&http.Client{}).Do(req)
 	if err != nil {
 		return errors.Wrap(err, "do request")
 	}
@@ -67,42 +98,6 @@ func canUnlockMachine(svc *service.Service, user *entities.User, _ *entities.Mac
 	default:
 		return errors.New("user has uknown job position")
 	}
-}
-
-func canStopMachine(svc *service.Service, user *entities.User, machine *entities.Machine) (*entities.Session, error) {
-	if user.JobPosition == entities.Worker {
-		sessions, err := svc.GetActiveSessionsByMachineAndUser(machine.Id, user.Id)
-		if err != nil {
-			return nil, errors.Wrap(err, "get sessions by machine and user")
-		}
-
-		if len(sessions) == 0 {
-			return nil, errors.Wrap(err, "there is no active sessions")
-		}
-
-		if len(sessions) > 1 {
-			return nil, errors.Wrap(err, "there are several sessions with machine and user")
-		}
-		return &sessions[0], nil
-	}
-
-	if user.JobPosition == entities.Admin {
-		sessions, err := svc.GetActiveSessionsByMachineID(machine.Id)
-		if err != nil {
-			return nil, errors.Wrap(err, "get sessions by machine")
-		}
-
-		if len(sessions) == 0 {
-			return nil, errors.Wrap(err, "there is no sessions with machine")
-		}
-
-		if len(sessions) > 1 {
-			return nil, errors.Wrap(err, "machine has several active sessions")
-		}
-		return &sessions[0], nil
-	}
-
-	return nil, errors.New("unknown user's job")
 }
 
 func canUnstopMachine(svc *service.Service, user *entities.User, machine *entities.Machine) (*entities.Session, error) {
@@ -176,6 +171,42 @@ func canLockMachine(svc *service.Service, user *entities.User, machine *entities
 
 	return nil, errors.New("user has uknown job position")
 
+}
+
+func canStopMachine(svc *service.Service, user *entities.User, machine *entities.Machine) (*entities.Session, error) {
+	if user.JobPosition == entities.Worker {
+		sessions, err := svc.GetActiveSessionsByMachineAndUser(machine.Id, user.Id)
+		if err != nil {
+			return nil, errors.Wrap(err, "get sessions by machine and user")
+		}
+
+		if len(sessions) == 0 {
+			return nil, errors.Wrap(err, "there is no active sessions")
+		}
+
+		if len(sessions) > 1 {
+			return nil, errors.Wrap(err, "there are several sessions with machine and user")
+		}
+		return &sessions[0], nil
+	}
+
+	if user.JobPosition == entities.Admin {
+		sessions, err := svc.GetActiveSessionsByMachineID(machine.Id)
+		if err != nil {
+			return nil, errors.Wrap(err, "get sessions by machine")
+		}
+
+		if len(sessions) == 0 {
+			return nil, errors.Wrap(err, "there is no sessions with machine")
+		}
+
+		if len(sessions) > 1 {
+			return nil, errors.Wrap(err, "machine has several active sessions")
+		}
+		return &sessions[0], nil
+	}
+
+	return nil, errors.New("unknown user's job")
 }
 
 func newQrKey() string {

@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS machines(
 	state integer DEFAULT 0,
   parking_id integer DEFAULT 0,
   voltage integer DEFAULT 0,
-  ip_addr varchar(16) NOT NULL,
+  ip_addr varchar(22) NOT NULL,
 		
 	CHECK (state IN (0, 1, 2)),
   CHECK (voltage >= 0),
